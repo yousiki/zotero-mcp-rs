@@ -12,6 +12,7 @@ use crate::shared::types::{
     FulltextData, WriteResponse, ZoteroCollection, ZoteroCollectionData, ZoteroItem, ZoteroItemData,
 };
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Error, Debug)]
 pub enum ZoteroApiError {
     #[error("Zotero API error ({status}): {message}")]

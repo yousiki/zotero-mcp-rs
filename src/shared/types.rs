@@ -207,6 +207,7 @@ pub struct FulltextData {
     pub total_pages: Option<i64>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryInfo {
@@ -234,6 +235,7 @@ pub struct LibraryInfo {
     pub url: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FeedItem {

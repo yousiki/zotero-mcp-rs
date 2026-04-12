@@ -18,6 +18,7 @@ use crate::tools::rename::{RenameArgs, handle_zotero_rename_attachments};
 pub struct ZoteroServer {
     client: Arc<ZoteroClient>,
     webdav: Arc<Option<WebDavClient>>,
+    #[allow(dead_code)]
     tool_router: ToolRouter<Self>,
 }
 

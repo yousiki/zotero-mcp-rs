@@ -22,7 +22,7 @@ async fn rename_inner(client: &ZoteroClient, args: RenameArgs) -> anyhow::Result
     }
 
     let parent = client.get_item(parent_key).await?;
-    if parent.data.title.is_none() && parent.data.creators.as_ref().map_or(true, |c| c.is_empty()) {
+    if parent.data.title.is_none() && parent.data.creators.as_ref().is_none_or(|c| c.is_empty()) {
         return Ok("Parent item has no metadata to generate a filename from".to_string());
     }
 

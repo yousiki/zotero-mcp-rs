@@ -100,6 +100,7 @@ impl WebDavClient {
         Ok(UploadResult { md5, mtime })
     }
 
+    #[allow(dead_code)]
     /// Check if {key}.zip exists via HEAD request.
     pub async fn file_exists(&self, key: &str) -> Result<bool> {
         let url = format!("{}/{}.zip", self.base_url, key);
@@ -112,6 +113,7 @@ impl WebDavClient {
         Ok(resp.status().is_success())
     }
 
+    #[allow(dead_code)]
     /// Delete {key}.zip and {key}.prop.
     pub async fn delete_file(&self, key: &str) -> Result<()> {
         let zip_url = format!("{}/{}.zip", self.base_url, key);
@@ -131,6 +133,7 @@ impl WebDavClient {
         Ok(())
     }
 
+    #[allow(dead_code)]
     /// Verify WebDAV server is accessible via OPTIONS request with 5s timeout.
     pub async fn verify(&self) -> bool {
         match self
