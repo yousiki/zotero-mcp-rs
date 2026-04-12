@@ -6,7 +6,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::clients::zotero::ZoteroClient;
-use crate::services::identifiers::{detect_input_type, normalize_doi, InputType};
+use crate::services::identifiers::{InputType, detect_input_type, normalize_doi};
 use crate::shared::formatters::{clean_html, format_item_result};
 use crate::shared::types::ZoteroItem;
 use crate::shared::validators::{StringOrList, dedupe_strings, normalize_limit, parse_str_list};
@@ -301,7 +301,10 @@ async fn handle_zotero_deduplicate_inner(
 
     // Validate action
     if args.action != "merge" {
-        return Err(anyhow::anyhow!("Invalid action: '{}'. Must be one of: find, merge", args.action));
+        return Err(anyhow::anyhow!(
+            "Invalid action: '{}'. Must be one of: find, merge",
+            args.action
+        ));
     }
 
     // Merge action
@@ -427,7 +430,9 @@ pub async fn handle_fetch(client: &ZoteroClient, args: FetchArgs) -> String {
 async fn handle_fetch_inner(client: &ZoteroClient, args: FetchArgs) -> anyhow::Result<String> {
     let input = args.id.trim();
     if input.is_empty() {
-        return Ok("Input cannot be empty. Provide a Zotero item key, DOI, or arXiv ID.".to_string());
+        return Ok(
+            "Input cannot be empty. Provide a Zotero item key, DOI, or arXiv ID.".to_string(),
+        );
     }
 
     // Detect input type and resolve to a Zotero item key
@@ -436,52 +441,62 @@ async fn handle_fetch_inner(client: &ZoteroClient, args: FetchArgs) -> anyhow::R
         InputType::Doi => {
             // Normalize DOI
             let doi = normalize_doi(input)?;
-            
+
             // Search for existing item by DOI
             let mut params = HashMap::new();
             params.insert("q".to_string(), doi.clone());
             params.insert("qmode".to_string(), "everything".to_string());
             params.insert("limit".to_string(), "50".to_string());
             let items = client.get_items(params).await?;
-            
+
             // Find exact DOI match
             let normalized_doi = doi.to_lowercase();
             let matched = items.into_iter().find(|item| {
-                item.data.doi.as_deref()
+                item.data
+                    .doi
+                    .as_deref()
                     .map(|d| d.to_lowercase() == normalized_doi)
                     .unwrap_or(false)
             });
-            
+
             match matched {
                 Some(item) => item.key,
-                None => return Ok(format!(
-                    "No item found with DOI: {}. Use zotero_add_paper to add this paper.",
-                    doi
-                )),
+                None => {
+                    return Ok(format!(
+                        "No item found with DOI: {}. Use zotero_add_paper to add this paper.",
+                        doi
+                    ));
+                }
             }
         }
         InputType::Arxiv => {
             // Normalize arXiv ID
             let arxiv_id = crate::services::identifiers::normalize_arxiv_id(input)?;
-            
+
             // Search for existing item by arXiv ID (in URL or extra field)
             let mut params = HashMap::new();
             params.insert("q".to_string(), arxiv_id.clone());
             params.insert("qmode".to_string(), "everything".to_string());
             params.insert("limit".to_string(), "50".to_string());
             let items = client.get_items(params).await?;
-            
+
             // Find item with matching arXiv ID
             let matched = items.into_iter().find(|item| {
                 // Check URL field
-                if item.data.url.as_deref()
+                if item
+                    .data
+                    .url
+                    .as_deref()
                     .map(|u| u.contains(&arxiv_id))
                     .unwrap_or(false)
                 {
                     return true;
                 }
                 // Check extra field for arXiv ID
-                if item.data.extra.as_deref()
+                if item
+                    .data
+                    .extra
+                    .as_deref()
                     .map(|e| e.to_lowercase().contains(&arxiv_id.to_lowercase()))
                     .unwrap_or(false)
                 {
@@ -489,13 +504,15 @@ async fn handle_fetch_inner(client: &ZoteroClient, args: FetchArgs) -> anyhow::R
                 }
                 false
             });
-            
+
             match matched {
                 Some(item) => item.key,
-                None => return Ok(format!(
-                    "No item found with arXiv ID: {}. Use zotero_add_paper to add this paper.",
-                    arxiv_id
-                )),
+                None => {
+                    return Ok(format!(
+                        "No item found with arXiv ID: {}. Use zotero_add_paper to add this paper.",
+                        arxiv_id
+                    ));
+                }
             }
         }
         _ => {

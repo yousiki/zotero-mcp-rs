@@ -1,8 +1,8 @@
 use anyhow::{Result, anyhow};
 use regex::Regex;
 
-use crate::shared::types::ZoteroItem;
 use crate::clients::zotero::ZoteroClient;
+use crate::shared::types::ZoteroItem;
 use std::collections::HashMap;
 /// Canonical input type for identifier detection.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -124,10 +124,7 @@ pub async fn find_existing_by_arxiv_id(_arxiv_id: &str) -> Option<ZoteroItem> {
 
 /// Resolve collection names to keys by fetching all collections and matching names.
 /// Supports exact match and case-insensitive substring match.
-pub async fn resolve_collection_names(
-    client: &ZoteroClient,
-    names: &[String],
-) -> Vec<String> {
+pub async fn resolve_collection_names(client: &ZoteroClient, names: &[String]) -> Vec<String> {
     let collections = match client.get_collections(HashMap::new()).await {
         Ok(c) => c,
         Err(_) => return vec![],
@@ -145,12 +142,18 @@ pub async fn resolve_collection_names(
             continue;
         }
         // Try case-insensitive match
-        if let Some(c) = collections.iter().find(|c| c.data.name.to_lowercase() == trimmed.to_lowercase()) {
+        if let Some(c) = collections
+            .iter()
+            .find(|c| c.data.name.to_lowercase() == trimmed.to_lowercase())
+        {
             result.push(c.key.clone());
             continue;
         }
         // Try substring match (case-insensitive)
-        if let Some(c) = collections.iter().find(|c| c.data.name.to_lowercase().contains(&trimmed.to_lowercase())) {
+        if let Some(c) = collections
+            .iter()
+            .find(|c| c.data.name.to_lowercase().contains(&trimmed.to_lowercase()))
+        {
             result.push(c.key.clone());
         }
     }

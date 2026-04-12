@@ -625,16 +625,14 @@ async fn handle_zotero_add_note_inner(
         // Verify parent item exists
         client.get_item(&item_key).await?;
 
-        let tags: Vec<ZoteroTag> = parse_str_list(
-            args.tags
-                .map(crate::shared::validators::StringOrList::List),
-        )
-        .into_iter()
-        .map(|tag| ZoteroTag {
-            tag,
-            tag_type: None,
-        })
-        .collect();
+        let tags: Vec<ZoteroTag> =
+            parse_str_list(args.tags.map(crate::shared::validators::StringOrList::List))
+                .into_iter()
+                .map(|tag| ZoteroTag {
+                    tag,
+                    tag_type: None,
+                })
+                .collect();
 
         let note_html = build_note_html(&note_title, &note_text);
 
