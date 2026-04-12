@@ -1,6 +1,6 @@
-# Zotero MCP Server (Rust)
+# Zotero MCP Server
 
-A high-performance Model Context Protocol (MCP) server for Zotero, written in Rust. This server enables AI assistants like Claude Desktop and Cursor to interact with your Zotero library through a standardized interface.
+A Model Context Protocol (MCP) server for Zotero, written in Rust. This server enables AI assistants like Claude Desktop and Cursor to interact with your Zotero library through a standardized interface.
 
 ## Features
 
@@ -189,3 +189,7 @@ See [AGENTS.md](AGENTS.md) for detailed architecture documentation and guides fo
 ## License
 
 MIT
+
+## Acknowledgments
+
+This project was inspired by [zotero-mcp](https://github.com/54yyyu/zotero-mcp) and references code from [zotero/translation-server](https://github.com/zotero/translation-server). Special thanks to [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent) for the excellent opencode plugin, and to Xiaomi for their powerful MIMO-V2-Pro model.
