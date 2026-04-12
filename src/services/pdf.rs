@@ -32,6 +32,53 @@ fn extract_attachment_key(data: &Value) -> Result<String> {
 
 /// Download PDF from URL, upload to WebDAV, create Zotero attachment item.
 /// Returns the attachment key.
+pub(crate) async fn attach_pdf_bytes(
+    client: &ZoteroClient,
+    parent_key: &str,
+    webdav: &WebDavClient,
+    filename: &str,
+    content_type: &str,
+    data: &[u8],
+) -> Result<String> {
+    let mut attach_data = client
+        .get_item_template("attachment", Some("imported_file"))
+        .await
+        .map_err(|e| anyhow!("Failed to get item template: {e}"))?;
+    attach_data.item_type = "attachment".to_string();
+    attach_data.parent_item = Some(parent_key.to_string());
+    attach_data.link_mode = Some("imported_file".to_string());
+    attach_data.title = Some(filename.to_string());
+    attach_data.filename = Some(filename.to_string());
+    attach_data.content_type = Some(content_type.to_string());
+
+    let create_resp = client
+        .create_items(&[attach_data.clone()])
+        .await
+        .map_err(|e| anyhow!("Failed to create attachment item: {e}"))?;
+    let create_value = serde_json::to_value(&create_resp)?;
+    let status = handle_write_response(&create_value);
+    if !status.ok {
+        return Err(anyhow!("Failed to create attachment: {}", status.message));
+    }
+    let attachment_key = extract_attachment_key(status.data.as_ref().unwrap_or(&Value::Null))?;
+
+    let upload_result = webdav.upload_file(&attachment_key, filename, data).await?;
+
+    let mut updated_data = attach_data;
+    updated_data.md5 = Some(upload_result.md5);
+    updated_data.mtime = Some(upload_result.mtime as i64);
+    let attach_item = client
+        .get_item(&attachment_key)
+        .await
+        .map_err(|e| anyhow!("Failed to get attachment item: {e}"))?;
+    client
+        .update_item(&attachment_key, &updated_data, attach_item.version)
+        .await
+        .map_err(|e| anyhow!("Failed to update attachment: {e}"))?;
+
+    Ok(attachment_key)
+}
+
 pub async fn download_and_attach_pdf(
     client: &ZoteroClient,
     parent_key: &str,
@@ -80,49 +127,15 @@ pub async fn download_and_attach_pdf(
         )
     };
 
-    // 3. Get item template for imported_file attachment
-    let mut attach_data = client
-        .get_item_template("attachment", Some("imported_file"))
-        .await
-        .map_err(|e| anyhow!("Failed to get item template: {e}"))?;
-    attach_data.item_type = "attachment".to_string();
-    attach_data.parent_item = Some(parent_key.to_string());
-    attach_data.link_mode = Some("imported_file".to_string());
-    attach_data.title = Some(actual_filename.clone());
-    attach_data.filename = Some(actual_filename.clone());
-    attach_data.content_type = Some(content_type);
-
-    // 4. Create attachment item in Zotero
-    let create_resp = client
-        .create_items(&[attach_data.clone()])
-        .await
-        .map_err(|e| anyhow!("Failed to create attachment item: {e}"))?;
-    let create_value = serde_json::to_value(&create_resp)?;
-    let status = handle_write_response(&create_value);
-    if !status.ok {
-        return Err(anyhow!("Failed to create attachment: {}", status.message));
-    }
-    let attachment_key = extract_attachment_key(status.data.as_ref().unwrap_or(&Value::Null))?;
-
-    // 5. Upload to WebDAV
-    let upload_result = webdav
-        .upload_file(&attachment_key, &actual_filename, &data)
-        .await?;
-
-    // 6. Update attachment with md5 + mtime
-    let mut updated_data = attach_data;
-    updated_data.md5 = Some(upload_result.md5);
-    updated_data.mtime = Some(upload_result.mtime as i64);
-    let attach_item = client
-        .get_item(&attachment_key)
-        .await
-        .map_err(|e| anyhow!("Failed to get attachment item: {e}"))?;
-    client
-        .update_item(&attachment_key, &updated_data, attach_item.version)
-        .await
-        .map_err(|e| anyhow!("Failed to update attachment: {e}"))?;
-
-    Ok(attachment_key)
+    attach_pdf_bytes(
+        client,
+        parent_key,
+        webdav,
+        &actual_filename,
+        &content_type,
+        &data,
+    )
+    .await
 }
 
 /// Create a linked URL attachment on a Zotero item.
@@ -214,7 +227,30 @@ pub async fn rename_pdf_attachments(client: &ZoteroClient, parent_key: &str) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use md5::{Digest, Md5};
     use serde_json::json;
+    use std::io::{Cursor, Read};
+    use std::sync::{Arc, Mutex};
+    use wiremock::matchers::{method, path, query_param};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    fn zotero_client(server: &MockServer) -> ZoteroClient {
+        ZoteroClient::with_base_url("test-key", "12345", "user", server.uri())
+    }
+
+    fn webdav_client(server: &MockServer) -> WebDavClient {
+        WebDavClient::new(&server.uri(), "user", "pass")
+    }
+
+    fn md5_hex(data: &[u8]) -> String {
+        let mut hasher = Md5::new();
+        hasher.update(data);
+        hasher
+            .finalize()
+            .into_iter()
+            .map(|b| format!("{:02x}", b))
+            .collect()
+    }
 
     #[test]
     fn test_extract_attachment_key_from_success() {
@@ -244,5 +280,134 @@ mod tests {
                 .to_string()
                 .contains("No attachment key")
         );
+    }
+
+    #[tokio::test]
+    async fn test_attach_local_pdf_uploads_and_updates_attachment() {
+        unsafe {
+            std::env::set_var("NO_PROXY", "127.0.0.1,localhost");
+            std::env::set_var("no_proxy", "127.0.0.1,localhost");
+        }
+
+        let zotero_server = MockServer::start().await;
+        let webdav_server = MockServer::start().await;
+        let client = zotero_client(&zotero_server);
+        let webdav = webdav_client(&webdav_server);
+
+        let uploaded_mtime: Arc<Mutex<Option<i64>>> = Arc::new(Mutex::new(None));
+        let expected_filename = "paper.pdf".to_string();
+        let expected_bytes = b"hello local pdf".to_vec();
+        let expected_md5 = md5_hex(&expected_bytes);
+
+        Mock::given(method("GET"))
+            .and(path("/items/new"))
+            .and(query_param("itemType", "attachment"))
+            .and(query_param("linkMode", "imported_file"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({})))
+            .expect(1)
+            .mount(&zotero_server)
+            .await;
+
+        Mock::given(method("POST"))
+            .and(path("/users/12345/items"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "successful": {
+                    "0": {"key": "ATTACH1", "data": {}}
+                }
+            })))
+            .expect(1)
+            .mount(&zotero_server)
+            .await;
+
+        Mock::given(method("GET"))
+            .and(path("/users/12345/items/ATTACH1"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "key": "ATTACH1",
+                "version": 7,
+                "data": {"itemType": "attachment"}
+            })))
+            .expect(1)
+            .mount(&zotero_server)
+            .await;
+
+        Mock::given(method("PATCH"))
+            .and(path("/users/12345/items/ATTACH1"))
+            .respond_with({
+                let uploaded_mtime = Arc::clone(&uploaded_mtime);
+                let expected_filename = expected_filename.clone();
+                let expected_md5 = expected_md5.clone();
+                move |request: &wiremock::Request| {
+                    let body: serde_json::Value = request.body_json().expect("json body");
+                    assert_eq!(body["itemType"], json!("attachment"));
+                    assert_eq!(body["parentItem"], json!("PARENT1"));
+                    assert_eq!(body["linkMode"], json!("imported_file"));
+                    assert_eq!(body["title"], json!(expected_filename));
+                    assert_eq!(body["filename"], json!(expected_filename));
+                    assert_eq!(body["contentType"], json!("application/pdf"));
+                    assert_eq!(body["md5"], json!(expected_md5));
+                    let mtime = body["mtime"].as_i64().expect("mtime");
+                    assert_eq!(*uploaded_mtime.lock().unwrap(), Some(mtime));
+                    ResponseTemplate::new(204)
+                }
+            })
+            .expect(1)
+            .mount(&zotero_server)
+            .await;
+
+        Mock::given(method("PUT"))
+            .and(path("/ATTACH1.zip"))
+            .respond_with({
+                let expected_filename = expected_filename.clone();
+                let expected_bytes = expected_bytes.clone();
+                move |request: &wiremock::Request| {
+                    let cursor = Cursor::new(request.body.clone());
+                    let mut archive = zip::ZipArchive::new(cursor).expect("zip archive");
+                    assert_eq!(archive.len(), 1);
+                    let mut file = archive.by_index(0).expect("zip entry");
+                    assert_eq!(file.name(), expected_filename);
+                    let mut contents = Vec::new();
+                    file.read_to_end(&mut contents).expect("zip contents");
+                    assert_eq!(contents, expected_bytes);
+                    ResponseTemplate::new(201)
+                }
+            })
+            .expect(1)
+            .mount(&webdav_server)
+            .await;
+
+        Mock::given(method("PUT"))
+            .and(path("/ATTACH1.prop"))
+            .respond_with({
+                let expected_md5 = expected_md5.clone();
+                let uploaded_mtime = Arc::clone(&uploaded_mtime);
+                move |request: &wiremock::Request| {
+                    let body = String::from_utf8(request.body.clone()).expect("prop xml");
+                    let mtime = body
+                        .split("<mtime>")
+                        .nth(1)
+                        .and_then(|part| part.split("</mtime>").next())
+                        .and_then(|value| value.parse::<i64>().ok())
+                        .expect("mtime value");
+                    assert!(body.contains(&format!("<hash>{}</hash>", expected_md5)));
+                    *uploaded_mtime.lock().unwrap() = Some(mtime);
+                    ResponseTemplate::new(201)
+                }
+            })
+            .expect(1)
+            .mount(&webdav_server)
+            .await;
+
+        let attachment_key = attach_pdf_bytes(
+            &client,
+            "PARENT1",
+            &webdav,
+            &expected_filename,
+            "application/pdf",
+            &expected_bytes,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(attachment_key, "ATTACH1");
     }
 }
