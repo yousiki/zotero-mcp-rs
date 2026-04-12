@@ -192,4 +192,4 @@ MIT
 
 ## Acknowledgments
 
-This project was inspired by [zotero-mcp](https://github.com/54yyyu/zotero-mcp) and references code from [zotero/translation-server](https://github.com/zotero/translation-server). Special thanks to [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent) for the excellent opencode plugin, and to Xiaomi for their powerful MIMO-V2-Pro model.
+This project was inspired by [zotero-mcp](https://github.com/54yyyu/zotero-mcp) and references code from [zotero/translation-server](https://github.com/zotero/translation-server). Special thanks to [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent) for the excellent opencode plugin, and to Xiaomi for their powerful [MIMO-V2-Pro model](https://mimo.xiaomi.com/mimo-v2-pro).

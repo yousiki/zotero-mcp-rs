@@ -299,6 +299,11 @@ async fn handle_zotero_deduplicate_inner(
         return Ok(lines.join("\n").trim().to_string());
     }
 
+    // Validate action
+    if args.action != "merge" {
+        return Err(anyhow::anyhow!("Invalid action: '{}'. Must be one of: find, merge", args.action));
+    }
+
     // Merge action
     let keeper_key = args
         .keeper_key
