@@ -115,6 +115,14 @@ pub async fn find_existing_by_arxiv_id(_arxiv_id: &str) -> Option<ZoteroItem> {
     None
 }
 
+/// Stub for resolving collection names to keys.
+/// Returns empty vector for now (name resolution not yet implemented).
+pub async fn resolve_collection_names(_client: &crate::clients::zotero::ZoteroClient, names: &[String]) -> Vec<String> {
+    // TODO: implement collection name resolution
+    let _ = names;
+    vec![]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
