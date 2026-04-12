@@ -1,0 +1,7 @@
+Command: cargo build && cargo test services::identifiers
+
+Result: passed
+
+Tests: 18 passed; 0 failed; 0 ignored
+
+Notes: build completed successfully before test run.
