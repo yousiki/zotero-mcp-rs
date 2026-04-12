@@ -6,7 +6,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::clients::zotero::ZoteroClient;
-use crate::services::identifiers::normalize_doi;
+use crate::services::identifiers::{detect_input_type, normalize_doi, InputType};
 use crate::shared::formatters::{clean_html, format_item_result};
 use crate::shared::types::ZoteroItem;
 use crate::shared::validators::{StringOrList, dedupe_strings, normalize_limit, parse_str_list};
@@ -69,10 +69,11 @@ pub struct DeduplicateArgs {
     pub confirm: bool,
 }
 
-/// Parameters for the fetch tool (ChatGPT connector).
+/// Parameters for the fetch tool.
+/// Accepts: Zotero item key, DOI, or arXiv ID.
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct FetchArgs {
-    /// Zotero item key.
+    /// Zotero item key, DOI, or arXiv ID.
     pub id: String,
 }
 
@@ -410,6 +411,7 @@ async fn handle_zotero_deduplicate_inner(
 }
 
 /// Handle the fetch tool (ChatGPT connector).
+/// Supports: Zotero item key, DOI, or arXiv ID.
 pub async fn handle_fetch(client: &ZoteroClient, args: FetchArgs) -> String {
     match handle_fetch_inner(client, args).await {
         Ok(s) => s,
@@ -418,8 +420,88 @@ pub async fn handle_fetch(client: &ZoteroClient, args: FetchArgs) -> String {
 }
 
 async fn handle_fetch_inner(client: &ZoteroClient, args: FetchArgs) -> anyhow::Result<String> {
-    let item = client.get_item(&args.id).await?;
-    let children = client.get_item_children(&args.id).await?;
+    let input = args.id.trim();
+    if input.is_empty() {
+        return Ok("Input cannot be empty. Provide a Zotero item key, DOI, or arXiv ID.".to_string());
+    }
+
+    // Detect input type and resolve to a Zotero item key
+    let input_type = detect_input_type(input);
+    let item_key = match input_type {
+        InputType::Doi => {
+            // Normalize DOI
+            let doi = normalize_doi(input)?;
+            
+            // Search for existing item by DOI
+            let mut params = HashMap::new();
+            params.insert("q".to_string(), doi.clone());
+            params.insert("qmode".to_string(), "everything".to_string());
+            params.insert("limit".to_string(), "50".to_string());
+            let items = client.get_items(params).await?;
+            
+            // Find exact DOI match
+            let normalized_doi = doi.to_lowercase();
+            let matched = items.into_iter().find(|item| {
+                item.data.doi.as_deref()
+                    .map(|d| d.to_lowercase() == normalized_doi)
+                    .unwrap_or(false)
+            });
+            
+            match matched {
+                Some(item) => item.key,
+                None => return Ok(format!(
+                    "No item found with DOI: {}. Use zotero_add_paper to add this paper.",
+                    doi
+                )),
+            }
+        }
+        InputType::Arxiv => {
+            // Normalize arXiv ID
+            let arxiv_id = crate::services::identifiers::normalize_arxiv_id(input)?;
+            
+            // Search for existing item by arXiv ID (in URL or extra field)
+            let mut params = HashMap::new();
+            params.insert("q".to_string(), arxiv_id.clone());
+            params.insert("qmode".to_string(), "everything".to_string());
+            params.insert("limit".to_string(), "50".to_string());
+            let items = client.get_items(params).await?;
+            
+            // Find item with matching arXiv ID
+            let matched = items.into_iter().find(|item| {
+                // Check URL field
+                if item.data.url.as_deref()
+                    .map(|u| u.contains(&arxiv_id))
+                    .unwrap_or(false)
+                {
+                    return true;
+                }
+                // Check extra field for arXiv ID
+                if item.data.extra.as_deref()
+                    .map(|e| e.to_lowercase().contains(&arxiv_id.to_lowercase()))
+                    .unwrap_or(false)
+                {
+                    return true;
+                }
+                false
+            });
+            
+            match matched {
+                Some(item) => item.key,
+                None => return Ok(format!(
+                    "No item found with arXiv ID: {}. Use zotero_add_paper to add this paper.",
+                    arxiv_id
+                )),
+            }
+        }
+        _ => {
+            // Treat as Zotero item key
+            input.to_string()
+        }
+    };
+
+    // Fetch the item and its children
+    let item = client.get_item(&item_key).await?;
+    let children = client.get_item_children(&item_key).await?;
 
     let notes: Vec<&ZoteroItem> = children
         .iter()

@@ -127,7 +127,7 @@ impl ZoteroServer {
         handle_zotero_deduplicate(&self.client, args).await
     }
 
-    #[tool(description = "ChatGPT connector fetch: return item text payload by Zotero item key.")]
+    #[tool(description = "Fetch item text payload by Zotero item key, DOI, or arXiv ID.")]
     async fn fetch(&self, Parameters(args): Parameters<FetchArgs>) -> String {
         handle_fetch(&self.client, args).await
     }
