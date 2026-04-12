@@ -1,0 +1,66 @@
+{
+  "name": "zotero-mcp-rs",
+  "description": "High-performance Zotero MCP server written in Rust",
+  "version": "0.1.0",
+  "language": "rust",
+  "build": {
+    "command": "cargo build",
+    "release_command": "cargo build --release",
+    "test_command": "cargo test",
+    "lint_command": "cargo clippy -- -D warnings",
+    "format_command": "cargo fmt"
+  },
+  "structure": {
+    "src": {
+      "main.rs": "Entry point, CLI parsing, transport setup",
+      "server.rs": "MCP server handler, tool registration",
+      "config.rs": "Environment variable configuration",
+      "clients/": "HTTP API clients (Zotero, WebDAV)",
+      "services/": "Business logic services (arXiv, CrossRef, PDF, search)",
+      "tools/": "MCP tool handlers (15 tools)",
+      "shared/": "Shared types, formatters, utilities"
+    }
+  },
+  "tools": [
+    "zotero_search",
+    "zotero_get_item",
+    "zotero_update_item",
+    "zotero_delete_item",
+    "zotero_get_annotations",
+    "zotero_get_notes",
+    "zotero_add_note",
+    "zotero_list_collections",
+    "zotero_manage_collections",
+    "zotero_get_recent",
+    "zotero_list_tags",
+    "zotero_deduplicate",
+    "zotero_add_paper",
+    "zotero_rename_attachments",
+    "fetch"
+  ],
+  "environment": {
+    "required": ["ZOTERO_API_KEY"],
+    "optional": [
+      "ZOTERO_LIBRARY_ID",
+      "ZOTERO_LIBRARY_TYPE",
+      "WEBDAV_URL",
+      "WEBDAV_USERNAME",
+      "WEBDAV_PASSWORD",
+      "PORT",
+      "MCP_TRANSPORT",
+      "RUST_LOG"
+    ]
+  },
+  "transports": ["stdio", "http"],
+  "dependencies": {
+    "mcp": "rmcp",
+    "async": "tokio",
+    "http": "reqwest",
+    "server": "axum",
+    "cli": "clap",
+    "xml": "quick-xml",
+    "json": "serde_json",
+    "errors": "thiserror",
+    "logging": "tracing"
+  }
+}
