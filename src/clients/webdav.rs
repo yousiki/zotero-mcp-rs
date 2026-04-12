@@ -160,7 +160,7 @@ fn create_zip(filename: &str, data: &[u8]) -> Result<Vec<u8>> {
 fn compute_md5(data: &[u8]) -> String {
     let mut hasher = Md5::new();
     hasher.update(data);
-    format!("{:x}", hasher.finalize())
+    hasher.finalize().into_iter().map(|b| format!("{:02x}", b)).collect::<String>()
 }
 
 pub fn create_webdav_client(
