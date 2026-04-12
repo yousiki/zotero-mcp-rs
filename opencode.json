@@ -1,0 +1,211 @@
+{
+  "name": "zotero-mcp-rs",
+  "description": "High-performance Zotero MCP server written in Rust",
+  "version": "0.1.0",
+  "language": "rust",
+  "build": {
+    "command": "cargo build",
+    "release_command": "cargo build --release",
+    "test_command": "cargo test",
+    "lint_command": "cargo clippy -- -D warnings",
+    "format_command": "cargo fmt"
+  },
+  "structure": {
+    "src": {
+      "main.rs": "Entry point, CLI parsing, transport setup (stdio/HTTP)",
+      "server.rs": "MCP server with tool router and 15 registered tools",
+      "config.rs": "Environment variable configuration and settings",
+      "clients/": {
+        "mod.rs": "Client module exports",
+        "zotero.rs": "Zotero API HTTP client with authentication",
+        "webdav.rs": "WebDAV client for PDF file uploads"
+      },
+      "services/": {
+        "mod.rs": "Services module exports",
+        "arxiv.rs": "arXiv API integration for paper metadata",
+        "crossref.rs": "CrossRef API integration for DOI lookup",
+        "identifiers.rs": "DOI/ISBN/arXiv identifier parsing utilities",
+        "search_engine.rs": "Unified search with tag clauses and filters",
+        "pdf.rs": "PDF metadata extraction and processing",
+        "oa_sources.rs": "Open Access source detection (arXiv, Unpaywall, PMC)"
+      },
+      "tools/": {
+        "mod.rs": "Tools module exports",
+        "search.rs": "zotero_search tool handler",
+        "items.rs": "zotero_get_item, zotero_update_item, zotero_delete_item",
+        "annotations.rs": "zotero_get_annotations, zotero_get_notes, zotero_add_note",
+        "collections.rs": "zotero_list_collections, zotero_manage_collections",
+        "library.rs": "zotero_get_recent, zotero_list_tags, zotero_deduplicate, fetch",
+        "add_paper.rs": "zotero_add_paper (DOI/arXiv/ISBN import)",
+        "rename.rs": "zotero_rename_attachments tool"
+      },
+      "shared/": {
+        "mod.rs": "Shared utilities exports",
+        "types.rs": "Common structs: ZoteroItem, ZoteroCollection, etc.",
+        "formatters.rs": "Output formatting and BibTeX generation",
+        "validators.rs": "Input validation helpers",
+        "template_engine.rs": "File naming template engine"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "zotero_search",
+      "description": "Unified Zotero search by text, tags, citation key, or advanced conditions",
+      "category": "search"
+    },
+    {
+      "name": "zotero_get_item",
+      "description": "Get item metadata, children, fulltext, and/or BibTeX sections",
+      "category": "items"
+    },
+    {
+      "name": "zotero_update_item",
+      "description": "Update one item, or batch-update tags across many items",
+      "category": "items"
+    },
+    {
+      "name": "zotero_delete_item",
+      "description": "Delete one or more Zotero items by key",
+      "category": "items"
+    },
+    {
+      "name": "zotero_get_annotations",
+      "description": "Get all annotations for a specific item or across library",
+      "category": "annotations"
+    },
+    {
+      "name": "zotero_get_notes",
+      "description": "Retrieve notes, or search notes + annotations when query is provided",
+      "category": "annotations"
+    },
+    {
+      "name": "zotero_add_note",
+      "description": "Create either a Zotero note or annotation based on type",
+      "category": "annotations"
+    },
+    {
+      "name": "zotero_list_collections",
+      "description": "List collections, search collections, or retrieve items in a collection",
+      "category": "collections"
+    },
+    {
+      "name": "zotero_manage_collections",
+      "description": "Create/delete collections, or add/remove items in a collection",
+      "category": "collections"
+    },
+    {
+      "name": "zotero_get_recent",
+      "description": "Get recently added items to your Zotero library",
+      "category": "library"
+    },
+    {
+      "name": "zotero_list_tags",
+      "description": "Get all tags used in your Zotero library",
+      "category": "library"
+    },
+    {
+      "name": "zotero_deduplicate",
+      "description": "Find or merge duplicate items in your library",
+      "category": "library"
+    },
+    {
+      "name": "fetch",
+      "description": "ChatGPT connector fetch: return item text payload by Zotero item key",
+      "category": "library"
+    },
+    {
+      "name": "zotero_add_paper",
+      "description": "Add a paper to Zotero by URL, DOI, arXiv ID, ISBN, or local file path",
+      "category": "papers"
+    },
+    {
+      "name": "zotero_rename_attachments",
+      "description": "Rename PDF/file attachments using Zotero's naming template",
+      "category": "papers"
+    }
+  ],
+  "environment": {
+    "required": [
+      {
+        "name": "ZOTERO_API_KEY",
+        "description": "Zotero API key from https://www.zotero.org/settings/keys"
+      }
+    ],
+    "optional": [
+      {
+        "name": "ZOTERO_LIBRARY_ID",
+        "description": "Library ID (user ID or group ID). Auto-detected if not set."
+      },
+      {
+        "name": "ZOTERO_LIBRARY_TYPE",
+        "description": "Library type: 'user' or 'group' (default: user)"
+      },
+      {
+        "name": "WEBDAV_URL",
+        "description": "WebDAV server URL for file uploads"
+      },
+      {
+        "name": "WEBDAV_USERNAME",
+        "description": "WebDAV username"
+      },
+      {
+        "name": "WEBDAV_PASSWORD",
+        "description": "WebDAV password"
+      },
+      {
+        "name": "PORT",
+        "description": "HTTP server port (default: 3000)"
+      },
+      {
+        "name": "MCP_TRANSPORT",
+        "description": "Transport mode: 'stdio' or 'http' (default: stdio)"
+      },
+      {
+        "name": "RUST_LOG",
+        "description": "Log level filter (e.g., 'info', 'debug')"
+      }
+    ]
+  },
+  "transports": {
+    "stdio": {
+      "default": true,
+      "description": "Standard input/output transport for MCP clients"
+    },
+    "http": {
+      "default": false,
+      "port_env": "PORT",
+      "endpoint": "/mcp",
+      "description": "HTTP Streamable transport for remote access"
+    }
+  },
+  "dependencies": {
+    "core": {
+      "rmcp": "MCP protocol implementation (server + transports)",
+      "tokio": "Async runtime",
+      "serde": "Serialization framework",
+      "serde_json": "JSON handling",
+      "anyhow": "Error handling",
+      "thiserror": "Custom error types"
+    },
+    "http": {
+      "reqwest": "HTTP client",
+      "axum": "HTTP server framework"
+    },
+    "parsing": {
+      "quick-xml": "XML parsing (Zotero API)",
+      "regex": "Pattern matching",
+      "zip": "PDF zip packaging for WebDAV"
+    },
+    "cli": {
+      "clap": "CLI argument parsing",
+      "tracing": "Structured logging"
+    }
+  },
+  "mcp": {
+    "server_name": "zotero-mcp-rs",
+    "protocol_version": "2024-11-05",
+    "capabilities": ["tools"],
+    "tool_count": 15
+  }
+}
