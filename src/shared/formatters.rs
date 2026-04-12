@@ -429,7 +429,7 @@ fn build_fallback_cite_key(item: &ZoteroItem) -> String {
 }
 
 fn escape_bibtex(value: &str) -> String {
-    value.replace('{', "").replace('}', "")
+    value.replace(['{', '}'], "")
 }
 
 // ---------------------------------------------------------------------------

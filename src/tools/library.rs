@@ -155,7 +155,7 @@ async fn handle_zotero_list_tags_inner(client: &ZoteroClient, args: ListTagsArgs
         .map(|entry| entry.tag)
         .filter(|tag| !tag.trim().is_empty())
         .collect();
-    tags.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
+    tags.sort_by_key(|a| a.to_lowercase());
 
     if tags.is_empty() {
         return Ok("No tags found.".to_string());
@@ -327,15 +327,13 @@ async fn handle_zotero_deduplicate_inner(client: &ZoteroClient, args: Deduplicat
     }
 
     if !args.confirm {
-        let preview = vec![
-            "Dry run preview:".to_string(),
+        let preview = ["Dry run preview:".to_string(),
             format!("Keeper: {}", keeper.key),
             format!("Duplicates: {}", duplicate_keys.join(", ")),
             format!("Merged tags: {}", merged_tag_names.len()),
             format!("Merged collections: {}", merged_collections.len()),
             format!("Children to re-parent: {}", child_count),
-            "Set confirm=true to execute merge.".to_string(),
-        ];
+            "Set confirm=true to execute merge.".to_string()];
         return Ok(preview.join("\n"));
     }
 
@@ -367,11 +365,9 @@ async fn handle_zotero_deduplicate_inner(client: &ZoteroClient, args: Deduplicat
         client.delete_item(&duplicate.key, duplicate.version).await?;
     }
 
-    let result = vec![
-        format!("Merged into keeper: {}", keeper.key),
+    let result = [format!("Merged into keeper: {}", keeper.key),
         format!("Duplicates trashed: {}", duplicates.len()),
-        format!("Children re-parented: {}", child_count),
-    ];
+        format!("Children re-parented: {}", child_count)];
     Ok(result.join("\n"))
 }
 

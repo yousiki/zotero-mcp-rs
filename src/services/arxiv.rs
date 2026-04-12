@@ -444,7 +444,7 @@ pub fn extract_project_urls(text: &str) -> Vec<String> {
     let mut urls = Vec::new();
 
     for m in url_re.find_iter(text) {
-        let raw = m.as_str().trim_end_matches(|c| c == '.' || c == ')');
+        let raw = m.as_str().trim_end_matches(['.', ')']);
         let lower = raw.to_lowercase();
 
         if excluded.iter().any(|d| lower.contains(d)) {

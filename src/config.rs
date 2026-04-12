@@ -1,16 +1,13 @@
 use std::env;
 
 #[derive(Debug, Clone, PartialEq)]
+#[derive(Default)]
 pub enum TransportMode {
+    #[default]
     Stdio,
     Http,
 }
 
-impl Default for TransportMode {
-    fn default() -> Self {
-        TransportMode::Stdio
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -60,7 +57,7 @@ impl Config {
 
         let transport = match env::var("MCP_TRANSPORT").as_deref() {
             Ok("http") => TransportMode::Http,
-            Ok("stdio") | _ => TransportMode::Stdio,
+            _ => TransportMode::Stdio,
         };
 
         Ok(Config {
@@ -75,6 +72,7 @@ impl Config {
         })
     }
 
+    #[allow(dead_code)]
     /// Check if WebDAV is fully configured (all three fields present)
     pub fn webdav_configured(&self) -> bool {
         self.webdav_url.is_some()
