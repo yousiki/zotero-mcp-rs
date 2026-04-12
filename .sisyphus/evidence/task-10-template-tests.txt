@@ -1,0 +1,39 @@
+warning: function `find_existing_by_doi` is never used
+warning: function `find_existing_by_arxiv_id` is never used
+warning: function `format_item_metadata` is never used
+warning: function `find_best_attachment` is never used
+warning: struct `AttachmentDetails` is never constructed
+warning: struct `LibraryInfo` is never constructed
+warning: struct `FeedItem` is never constructed
+warning: field `data` is never read
+warning: `zotero-mcp-rs` (bin "zotero-mcp-rs" test) generated 8 warnings
+Finished `test` profile [unoptimized + debuginfo] target(s) in 2.07s
+Running unittests src/main.rs (target/debug/deps/zotero_mcp_rs-3016c7261a97dc5c)
+
+running 24 tests
+test shared::template_engine::tests::computes_first_creator_for_three_authors ... ok
+test shared::template_engine::tests::computes_first_creator_for_one_author ... ok
+test shared::template_engine::tests::computes_first_creator_for_two_authors ... ok
+test shared::template_engine::tests::applies_hyphen_case ... ok
+test shared::template_engine::tests::applies_lower_case ... ok
+test shared::template_engine::tests::applies_pascal_case ... ok
+test shared::template_engine::tests::applies_title_case ... ok
+test shared::template_engine::tests::applies_sentence_case ... ok
+test shared::template_engine::tests::deduplicates_duplicate_suffixes ... ok
+test shared::template_engine::tests::applies_snake_case ... ok
+test shared::template_engine::tests::applies_upper_case ... ok
+test shared::template_engine::tests::applies_camel_case ... ok
+test shared::template_engine::tests::default_template_with_full_item ... ok
+test shared::template_engine::tests::default_template_with_missing_creator_and_year ... ok
+test shared::template_engine::tests::default_template_with_missing_year ... ok
+test shared::template_engine::tests::strips_invalid_file_name_characters ... ok
+test shared::template_engine::tests::supports_named_creator_entries ... ok
+test shared::template_engine::tests::supports_truthy_conditionals ... ok
+test shared::template_engine::tests::formats_creator_lists_with_options ... ok
+test shared::template_engine::tests::truncates_default_title_to_100_chars ... ok
+test shared::template_engine::tests::default_template_with_missing_creator ... ok
+test shared::template_engine::tests::extracts_year_from_date ... ok
+test shared::template_engine::tests::evaluates_if_elseif_else_blocks ... ok
+test shared::template_engine::tests::supports_regex_match_and_replace ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 94 filtered out; finished in 0.01s
