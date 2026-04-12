@@ -1,0 +1,8 @@
+   Compiling zotero-mcp-rs v0.1.0 (/Users/yousiki/Documents/zotero-mcp-rs)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.40s
+    Checking hyper v1.9.0
+    Checking hyper-util v0.1.20
+    Checking hyper-tls v0.6.0
+    Checking reqwest v0.12.28
+    Checking zotero-mcp-rs v0.1.0 (/Users/yousiki/Documents/zotero-mcp-rs)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.63s

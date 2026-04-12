@@ -1,0 +1,1 @@
+- Task 1 uses stdio-only transport wiring in `main.rs` and a single `zotero_search` stub tool in `server.rs`; HTTP transport, CLI parsing, and real Zotero logic remain deferred to later tasks.
