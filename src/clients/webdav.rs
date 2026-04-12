@@ -10,6 +10,7 @@ pub struct UploadResult {
     pub mtime: u64,
 }
 
+#[derive(Clone)]
 pub struct WebDavClient {
     base_url: String,
     auth_header: String,

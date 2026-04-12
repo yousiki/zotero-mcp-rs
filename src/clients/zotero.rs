@@ -29,6 +29,7 @@ pub struct TagEntry {
     pub tag: String,
 }
 
+#[derive(Clone)]
 pub struct ZoteroClient {
     base_url: String,
     api_key: String,

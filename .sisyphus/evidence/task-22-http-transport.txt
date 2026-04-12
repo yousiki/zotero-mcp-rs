@@ -1,0 +1,71 @@
+Task 22: HTTP Streamable transport + dual mode CLI
+==================================================
+
+## Changes Made
+
+### 1. Updated `src/main.rs`
+- Added `--stdio` (default) and `--http` CLI flags with `conflicts_with` constraints
+- Added `--port` flag (default: 3000, env: PORT)
+- Implemented transport mode selection: CLI flag > env > default (stdio)
+- Added HTTP transport using `rmcp::transport::streamable_http_server::StreamableHttpService`
+- Created axum router with `/mcp` endpoint for HTTP mode
+- Used `LocalSessionManager` for session management
+
+### 2. Updated `Cargo.toml`
+- Added `axum = "0.8"` dependency
+
+### 3. Updated `src/clients/zotero.rs`
+- Added `#[derive(Clone)]` to `ZoteroClient` struct
+
+### 4. Updated `src/clients/webdav.rs`
+- Added `#[derive(Clone)]` to `WebDavClient` struct
+
+## Verification
+
+### Build Status
+```
+cargo build
+   Compiling zotero-mcp-rs v0.1.0 (/Users/yousiki/Documents/zotero-mcp-rs)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.19s
+```
+
+### Test Status
+```
+cargo test
+running 166 tests
+test result: ok. 166 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+### CLI Usage Examples
+
+#### Stdio mode (default):
+```bash
+zotero-mcp-rs
+# or explicitly:
+zotero-mcp-rs --stdio
+```
+
+#### HTTP mode:
+```bash
+zotero-mcp-rs --http --port 3000
+# Server listens on http://0.0.0.0:3000/mcp
+```
+
+#### Environment variable override:
+```bash
+MCP_TRANSPORT=http PORT=8080 zotero-mcp-rs
+```
+
+## Implementation Details
+
+The HTTP transport uses rmcp's `StreamableHttpService` with:
+- `LocalSessionManager` for in-memory session management
+- Default `StreamableHttpServerConfig` (stateful mode, SSE keep-alive)
+- Axum router with `/mcp` endpoint
+- TCP listener bound to `0.0.0.0:{port}`
+
+The implementation follows the MCP Streamable HTTP specification and supports:
+- Session management via `Mcp-Session-Id` header
+- SSE streaming for responses
+- Stateful mode for client reconnection
+- DNS rebinding protection via allowed hosts
