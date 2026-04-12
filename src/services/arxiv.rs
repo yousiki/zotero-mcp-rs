@@ -621,7 +621,7 @@ pub async fn add_via_arxiv(
     )
     .await
     {
-        Ok(()) => attached = true,
+        Ok(_) => attached = true,
         Err(e) => tracing::warn!("Failed to attach PDF for {}: {}", arxiv_id, e),
     }
 
