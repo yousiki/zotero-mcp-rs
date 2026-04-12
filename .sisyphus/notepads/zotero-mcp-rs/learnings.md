@@ -1,1 +1,0 @@
-- rmcp v1.4.0 supports the `#[tool_router(server_handler)]` shortcut for tools-only servers, and `handler::server::wrapper::Parameters<T>` is the correct typed extractor for stub tool arguments.

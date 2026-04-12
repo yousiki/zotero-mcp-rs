@@ -1,1 +1,0 @@
-- `cargo build` initially surfaced dead-code warnings for scaffold-only types in the binary crate; the scaffold now instantiates placeholder types in `main.rs` and consumes the stub tool args to keep `cargo clippy -- -D warnings` clean without blanket allow attributes.
