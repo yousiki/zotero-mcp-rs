@@ -5,10 +5,13 @@ use serde::Deserialize;
 
 use crate::clients::zotero::ZoteroClient;
 use crate::services::identifiers::normalize_doi;
-use crate::shared::formatters::{clean_html, format_item_metadata, format_item_result, generate_bibtex};
+use crate::shared::formatters::{
+    clean_html, format_item_metadata, format_item_result, generate_bibtex,
+};
 use crate::shared::types::{ZoteroItem, ZoteroTag};
 use crate::shared::validators::{
-    dedupe_strings, is_collection_key, normalize_limit, parse_creator_names, parse_str_list, StringOrList,
+    StringOrList, dedupe_strings, is_collection_key, normalize_limit, parse_creator_names,
+    parse_str_list,
 };
 
 // ---------------------------------------------------------------------------
@@ -102,7 +105,10 @@ fn apply_tag_ops(current: &[ZoteroTag], add: &[String], remove: &[String]) -> Ve
     }
     by_lower
         .into_values()
-        .map(|tag| ZoteroTag { tag, tag_type: None })
+        .map(|tag| ZoteroTag {
+            tag,
+            tag_type: None,
+        })
         .collect()
 }
 
@@ -130,7 +136,12 @@ fn format_children_group(items: &[ZoteroItem], kind: &str) -> Vec<String> {
             .iter()
             .map(|item| {
                 let raw = item.data.note.as_deref().unwrap_or("");
-                let preview = clean_html(raw, true).chars().take(160).collect::<String>().trim().to_string();
+                let preview = clean_html(raw, true)
+                    .chars()
+                    .take(160)
+                    .collect::<String>()
+                    .trim()
+                    .to_string();
                 let preview = if preview.is_empty() {
                     "(empty note)".to_string()
                 } else {
@@ -188,7 +199,10 @@ pub async fn handle_zotero_get_item(client: &ZoteroClient, args: ItemGetArgs) ->
     }
 }
 
-async fn handle_zotero_get_item_inner(client: &ZoteroClient, args: ItemGetArgs) -> anyhow::Result<String> {
+async fn handle_zotero_get_item_inner(
+    client: &ZoteroClient,
+    args: ItemGetArgs,
+) -> anyhow::Result<String> {
     let include = if args.include.is_empty() {
         default_include()
     } else {
@@ -207,8 +221,16 @@ async fn handle_zotero_get_item_inner(client: &ZoteroClient, args: ItemGetArgs) 
         if children.is_empty() {
             sections.push("## Children\n\nThis item has no children.".to_string());
         } else {
-            let attachments: Vec<_> = children.iter().filter(|c| c.data.item_type == "attachment").cloned().collect();
-            let notes: Vec<_> = children.iter().filter(|c| c.data.item_type == "note").cloned().collect();
+            let attachments: Vec<_> = children
+                .iter()
+                .filter(|c| c.data.item_type == "attachment")
+                .cloned()
+                .collect();
+            let notes: Vec<_> = children
+                .iter()
+                .filter(|c| c.data.item_type == "note")
+                .cloned()
+                .collect();
             let others: Vec<_> = children
                 .iter()
                 .filter(|c| c.data.item_type != "attachment" && c.data.item_type != "note")
@@ -237,10 +259,10 @@ async fn handle_zotero_get_item_inner(client: &ZoteroClient, args: ItemGetArgs) 
 
         // Try item key first, then try best attachment key
         let mut candidate_keys = vec![args.item_key.clone()];
-        if let Ok(children) = client.get_item_children(&args.item_key).await {
-            if let Some(best) = crate::shared::formatters::find_best_attachment(&children) {
-                candidate_keys.insert(0, best.key);
-            }
+        if let Ok(children) = client.get_item_children(&args.item_key).await
+            && let Some(best) = crate::shared::formatters::find_best_attachment(&children)
+        {
+            candidate_keys.insert(0, best.key);
         }
 
         for key in &candidate_keys {
@@ -265,8 +287,12 @@ async fn handle_zotero_get_item_inner(client: &ZoteroClient, args: ItemGetArgs) 
             lines.push("No indexed full text content available.".to_string());
         } else {
             if indexed_pages.is_some() || total_pages.is_some() {
-                let ip = indexed_pages.map(|v| v.to_string()).unwrap_or_else(|| "?".to_string());
-                let tp = total_pages.map(|v| v.to_string()).unwrap_or_else(|| "?".to_string());
+                let ip = indexed_pages
+                    .map(|v| v.to_string())
+                    .unwrap_or_else(|| "?".to_string());
+                let tp = total_pages
+                    .map(|v| v.to_string())
+                    .unwrap_or_else(|| "?".to_string());
                 lines.push(format!("Indexed pages: {}/{}", ip, tp));
                 lines.push(String::new());
             }
@@ -291,13 +317,17 @@ pub async fn handle_zotero_update_item(client: &ZoteroClient, args: ItemUpdateAr
     }
 }
 
-async fn handle_zotero_update_item_inner(client: &ZoteroClient, args: ItemUpdateArgs) -> anyhow::Result<String> {
+async fn handle_zotero_update_item_inner(
+    client: &ZoteroClient,
+    args: ItemUpdateArgs,
+) -> anyhow::Result<String> {
     let explicit_item_keys = dedupe_strings(args.item_keys.clone().unwrap_or_default());
     let query = args.query.trim().to_string();
     let required_tags = dedupe_strings(parse_str_list(args.tag.clone()));
     let add_tags = dedupe_strings(parse_str_list(args.add_tags.clone()));
     let remove_tags = dedupe_strings(parse_str_list(args.remove_tags.clone()));
-    let has_batch_selector = !explicit_item_keys.is_empty() || !query.is_empty() || !required_tags.is_empty();
+    let has_batch_selector =
+        !explicit_item_keys.is_empty() || !query.is_empty() || !required_tags.is_empty();
     let has_single_update_target = args.item_key.as_ref().is_some_and(|k| !k.trim().is_empty());
 
     // Batch tag update mode
@@ -334,7 +364,8 @@ async fn handle_zotero_update_item_inner(client: &ZoteroClient, args: ItemUpdate
                     .await?;
             }
 
-            let required_lower: Vec<String> = required_tags.iter().map(|t| t.to_lowercase()).collect();
+            let required_lower: Vec<String> =
+                required_tags.iter().map(|t| t.to_lowercase()).collect();
             selected = candidates
                 .into_iter()
                 .filter(|item| {
@@ -364,11 +395,13 @@ async fn handle_zotero_update_item_inner(client: &ZoteroClient, args: ItemUpdate
             let current_tags = item.data.tags.as_deref().unwrap_or(&[]);
             let next_tags = apply_tag_ops(current_tags, &add_tags, &remove_tags);
 
-            let before: Vec<String> = dedupe_strings(current_tags.iter().map(|t| t.tag.clone()).collect());
+            let before: Vec<String> =
+                dedupe_strings(current_tags.iter().map(|t| t.tag.clone()).collect());
             let mut before_sorted = before.clone();
             before_sorted.sort();
 
-            let after: Vec<String> = dedupe_strings(next_tags.iter().map(|t| t.tag.clone()).collect());
+            let after: Vec<String> =
+                dedupe_strings(next_tags.iter().map(|t| t.tag.clone()).collect());
             let mut after_sorted = after.clone();
             after_sorted.sort();
 
@@ -379,7 +412,9 @@ async fn handle_zotero_update_item_inner(client: &ZoteroClient, args: ItemUpdate
 
             let mut next_data = item.data.clone();
             next_data.tags = Some(next_tags);
-            client.update_item(&item.key, &next_data, item.version).await?;
+            client
+                .update_item(&item.key, &next_data, item.version)
+                .await?;
             updated += 1;
         }
 
@@ -393,7 +428,9 @@ async fn handle_zotero_update_item_inner(client: &ZoteroClient, args: ItemUpdate
 
     // Single item update mode
     if !has_single_update_target {
-        return Err(anyhow::anyhow!("item_key is required for single-item updates"));
+        return Err(anyhow::anyhow!(
+            "item_key is required for single-item updates"
+        ));
     }
 
     let item_key = args.item_key.as_ref().unwrap().trim().to_string();
@@ -436,7 +473,10 @@ async fn handle_zotero_update_item_inner(client: &ZoteroClient, args: ItemUpdate
         next.tags = Some(
             replaced
                 .into_iter()
-                .map(|tag| ZoteroTag { tag, tag_type: None })
+                .map(|tag| ZoteroTag {
+                    tag,
+                    tag_type: None,
+                })
                 .collect(),
         );
     } else if !add_tags.is_empty() || !remove_tags.is_empty() {
@@ -472,7 +512,10 @@ pub async fn handle_zotero_delete_item(client: &ZoteroClient, args: ItemDeleteAr
     }
 }
 
-async fn handle_zotero_delete_item_inner(client: &ZoteroClient, args: ItemDeleteArgs) -> anyhow::Result<String> {
+async fn handle_zotero_delete_item_inner(
+    client: &ZoteroClient,
+    args: ItemDeleteArgs,
+) -> anyhow::Result<String> {
     let item_keys = dedupe_strings(args.item_keys.into_vec());
     if item_keys.is_empty() {
         return Err(anyhow::anyhow!("item_keys requires at least one value"));

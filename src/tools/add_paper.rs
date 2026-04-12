@@ -6,13 +6,13 @@ use crate::clients::zotero::ZoteroClient;
 use crate::services::arxiv::add_via_arxiv;
 use crate::services::crossref::add_via_crossref;
 use crate::services::identifiers::{
-    detect_input_type, find_existing_by_arxiv_id, find_existing_by_doi, normalize_arxiv_id,
-    normalize_doi, resolve_collection_names, InputType,
+    InputType, detect_input_type, find_existing_by_arxiv_id, find_existing_by_doi,
+    normalize_arxiv_id, normalize_doi, resolve_collection_names,
 };
 use crate::services::pdf::rename_pdf_attachments;
 use crate::shared::formatters::format_item_result;
 use crate::shared::types::ZoteroTag;
-use crate::shared::validators::{dedupe_strings, is_collection_key, parse_str_list, StringOrList};
+use crate::shared::validators::{StringOrList, dedupe_strings, is_collection_key, parse_str_list};
 
 /// Parameters for the zotero_add_paper tool.
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -52,7 +52,10 @@ async fn add_paper_inner(
     let collection_keys = resolve_collections(client, &collection_refs).await?;
     let tags: Vec<ZoteroTag> = dedupe_strings(parse_str_list(args.tags))
         .into_iter()
-        .map(|tag| ZoteroTag { tag, tag_type: None })
+        .map(|tag| ZoteroTag {
+            tag,
+            tag_type: None,
+        })
         .collect();
 
     match input_type {

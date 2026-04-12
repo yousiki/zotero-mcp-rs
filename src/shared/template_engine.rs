@@ -386,10 +386,10 @@ fn apply_common(
             .unwrap_or_default();
     }
 
-    if let Some(ctx) = context.as_ref() {
-        if !ctx.protected_literals.is_empty() {
-            value = protect_literals(&value, &ctx.protected_literals);
-        }
+    if let Some(ctx) = context.as_ref()
+        && !ctx.protected_literals.is_empty()
+    {
+        value = protect_literals(&value, &ctx.protected_literals);
     }
 
     let start = start_str.parse::<usize>().unwrap_or(0);
@@ -406,10 +406,10 @@ fn apply_common(
     let raw_value = value.clone();
     let mut affixed = false;
 
-    if !replace_from.is_empty() {
-        if let Some(re) = compile_regex(&replace_from, &regex_opts) {
-            value = re.replace_all(&value, replace_to.as_str()).into_owned();
-        }
+    if !replace_from.is_empty()
+        && let Some(_re) = compile_regex(&replace_from, &regex_opts)
+    {
+        value = _re.replace_all(&value, replace_to.as_str()).into_owned();
     }
 
     if !prefix.is_empty() && !value.starts_with(&prefix) {
@@ -421,15 +421,13 @@ fn apply_common(
         affixed = true;
     }
 
-    if affixed {
-        if let Some(ctx) = context {
-            ctx.chunks.push(Chunk {
-                value: value.clone(),
-                raw_value,
-                suffix: suffix.clone(),
-                prefix: prefix.clone(),
-            });
-        }
+    if affixed && let Some(ctx) = context {
+        ctx.chunks.push(Chunk {
+            value: value.clone(),
+            raw_value,
+            suffix: suffix.clone(),
+            prefix: prefix.clone(),
+        });
     }
 
     if !text_case.is_empty() {

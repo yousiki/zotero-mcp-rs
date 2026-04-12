@@ -1,7 +1,7 @@
-use serde::Deserialize;
-use rmcp::schemars::{self, JsonSchema};
 use crate::clients::zotero::ZoteroClient;
 use crate::shared::template_engine::build_renamed_filename;
+use rmcp::schemars::{self, JsonSchema};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct RenameArgs {
@@ -27,7 +27,8 @@ async fn rename_inner(client: &ZoteroClient, args: RenameArgs) -> anyhow::Result
     }
 
     let children = client.get_item_children(parent_key).await?;
-    let attachments: Vec<_> = children.iter()
+    let attachments: Vec<_> = children
+        .iter()
         .filter(|child| {
             child.data.item_type == "attachment"
                 && child.data.filename.is_some()
@@ -53,9 +54,15 @@ async fn rename_inner(client: &ZoteroClient, args: RenameArgs) -> anyhow::Result
         let mut updated_data = attachment.data.clone();
         updated_data.filename = Some(new_name.clone());
         updated_data.title = Some(new_name.clone());
-        client.update_item(&attachment.key, &updated_data, attachment.version).await?;
+        client
+            .update_item(&attachment.key, &updated_data, attachment.version)
+            .await?;
         results.push(format!("- {} → {}", old_name, new_name));
     }
 
-    Ok(format!("Renamed {} attachment(s):\n{}", attachments.len(), results.join("\n")))
+    Ok(format!(
+        "Renamed {} attachment(s):\n{}",
+        attachments.len(),
+        results.join("\n")
+    ))
 }

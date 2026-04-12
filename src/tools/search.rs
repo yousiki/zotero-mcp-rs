@@ -10,7 +10,7 @@ use crate::services::search_engine::{
 };
 use crate::shared::formatters::format_item_result;
 use crate::shared::types::SearchCondition;
-use crate::shared::validators::{normalize_limit, parse_str_list, StringOrList};
+use crate::shared::validators::{StringOrList, normalize_limit, parse_str_list};
 
 /// Parameters for the zotero_search tool.
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -92,53 +92,53 @@ async fn handle_zotero_search_inner(
     }
 
     // Path 2: Advanced conditions
-    if let Some(conditions) = &args.conditions {
-        if !conditions.is_empty() {
-            let limit = normalize_limit(Some(args.limit), 50, 1000) as usize;
-            let all_items = client
-                .paginate(
-                    |params| client.get_items(params),
-                    HashMap::new(),
-                    Some(10000),
-                )
-                .await?;
-            let mut matched: Vec<_> = all_items
-                .iter()
-                .filter(|item| {
-                    let outcomes: Vec<bool> = conditions
-                        .iter()
-                        .map(|cond| evaluate_condition(item, cond))
-                        .collect();
-                    if args.join_mode == "all" {
-                        outcomes.iter().all(|&b| b)
-                    } else {
-                        outcomes.iter().any(|&b| b)
-                    }
-                })
-                .collect();
-            if let Some(sort_field) = &args.sort_by {
-                matched.sort_by(|a, b| {
-                    let va = first_comparable_value(a, sort_field);
-                    let vb = first_comparable_value(b, sort_field);
-                    let ord = compare_comparable(&va, &vb);
-                    if args.sort_direction == "asc" {
-                        ord
-                    } else {
-                        ord.reverse()
-                    }
-                });
-            }
-            let sliced: Vec<_> = matched.into_iter().take(limit).collect();
-            if sliced.is_empty() {
-                return Ok("No items matched advanced search conditions.".to_string());
-            }
-            return Ok(sliced
-                .iter()
-                .enumerate()
-                .map(|(i, item)| format_item_result(item, Some(i + 1), true))
-                .collect::<Vec<_>>()
-                .join("\n\n"));
+    if let Some(conditions) = &args.conditions
+        && !conditions.is_empty()
+    {
+        let limit = normalize_limit(Some(args.limit), 50, 1000) as usize;
+        let all_items = client
+            .paginate(
+                |params| client.get_items(params),
+                HashMap::new(),
+                Some(10000),
+            )
+            .await?;
+        let mut matched: Vec<_> = all_items
+            .iter()
+            .filter(|item| {
+                let outcomes: Vec<bool> = conditions
+                    .iter()
+                    .map(|cond| evaluate_condition(item, cond))
+                    .collect();
+                if args.join_mode == "all" {
+                    outcomes.iter().all(|&b| b)
+                } else {
+                    outcomes.iter().any(|&b| b)
+                }
+            })
+            .collect();
+        if let Some(sort_field) = &args.sort_by {
+            matched.sort_by(|a, b| {
+                let va = first_comparable_value(a, sort_field);
+                let vb = first_comparable_value(b, sort_field);
+                let ord = compare_comparable(&va, &vb);
+                if args.sort_direction == "asc" {
+                    ord
+                } else {
+                    ord.reverse()
+                }
+            });
         }
+        let sliced: Vec<_> = matched.into_iter().take(limit).collect();
+        if sliced.is_empty() {
+            return Ok("No items matched advanced search conditions.".to_string());
+        }
+        return Ok(sliced
+            .iter()
+            .enumerate()
+            .map(|(i, item)| format_item_result(item, Some(i + 1), true))
+            .collect::<Vec<_>>()
+            .join("\n\n"));
     }
 
     // Path 3: Text + tag search
@@ -158,11 +158,7 @@ async fn handle_zotero_search_inner(
         let mut api_params = HashMap::new();
         api_params.insert("itemType".to_string(), "-attachment".to_string());
         let all_items = client
-            .paginate(
-                |params| client.get_items(params),
-                api_params,
-                Some(5000),
-            )
+            .paginate(|params| client.get_items(params), api_params, Some(5000))
             .await?;
         let matches: Vec<_> = all_items
             .iter()

@@ -93,17 +93,74 @@ struct AnnotationInfo {
 
 fn format_annotation_block(ann: &AnnotationInfo, index: usize) -> String {
     let mut lines: Vec<String> = Vec::new();
-    lines.push(format!("{}. Type: {}", index, if ann.annotation_type.is_empty() { "annotation" } else { &ann.annotation_type }));
-    lines.push(format!("   - Key: {}", if ann.key.is_empty() { "(none)" } else { &ann.key }));
+    lines.push(format!(
+        "{}. Type: {}",
+        index,
+        if ann.annotation_type.is_empty() {
+            "annotation"
+        } else {
+            &ann.annotation_type
+        }
+    ));
+    lines.push(format!(
+        "   - Key: {}",
+        if ann.key.is_empty() {
+            "(none)"
+        } else {
+            &ann.key
+        }
+    ));
     if let Some(parent_title) = &ann.parent_title {
         lines.push(format!("   - Parent: {}", parent_title));
     }
-    lines.push(format!("   - Color: {}", if ann.color.is_empty() { "(none)" } else { &ann.color }));
-    lines.push(format!("   - Page: {}", if ann.page_label.is_empty() { "(none)" } else { &ann.page_label }));
-    lines.push(format!("   - Position: {}", if ann.position.is_empty() { "(none)" } else { &ann.position }));
-    lines.push(format!("   - Text: {}", if ann.text.is_empty() { "(none)" } else { &ann.text }));
-    lines.push(format!("   - Comment: {}", if ann.comment.is_empty() { "(none)" } else { &ann.comment }));
-    lines.push(format!("   - Tags: {}", if ann.tags.is_empty() { "(none)".to_string() } else { ann.tags.join(", ") }));
+    lines.push(format!(
+        "   - Color: {}",
+        if ann.color.is_empty() {
+            "(none)"
+        } else {
+            &ann.color
+        }
+    ));
+    lines.push(format!(
+        "   - Page: {}",
+        if ann.page_label.is_empty() {
+            "(none)"
+        } else {
+            &ann.page_label
+        }
+    ));
+    lines.push(format!(
+        "   - Position: {}",
+        if ann.position.is_empty() {
+            "(none)"
+        } else {
+            &ann.position
+        }
+    ));
+    lines.push(format!(
+        "   - Text: {}",
+        if ann.text.is_empty() {
+            "(none)"
+        } else {
+            &ann.text
+        }
+    ));
+    lines.push(format!(
+        "   - Comment: {}",
+        if ann.comment.is_empty() {
+            "(none)"
+        } else {
+            &ann.comment
+        }
+    ));
+    lines.push(format!(
+        "   - Tags: {}",
+        if ann.tags.is_empty() {
+            "(none)".to_string()
+        } else {
+            ann.tags.join(", ")
+        }
+    ));
     lines.join("\n")
 }
 
@@ -124,7 +181,12 @@ fn annotation_info_from_item(item: &ZoteroItem, parent_title: Option<String>) ->
         .data
         .tags
         .as_ref()
-        .map(|tags| tags.iter().map(|t| t.tag.clone()).filter(|t| !t.is_empty()).collect())
+        .map(|tags| {
+            tags.iter()
+                .map(|t| t.tag.clone())
+                .filter(|t| !t.is_empty())
+                .collect()
+        })
         .unwrap_or_default();
 
     AnnotationInfo {
@@ -150,10 +212,10 @@ async fn resolve_annotation_parent_titles(
 ) -> HashMap<String, String> {
     let mut attachment_keys: Vec<String> = Vec::new();
     for annotation in annotations {
-        if let Some(parent) = &annotation.data.parent_item {
-            if !parent.trim().is_empty() {
-                attachment_keys.push(parent.clone());
-            }
+        if let Some(parent) = &annotation.data.parent_item
+            && !parent.trim().is_empty()
+        {
+            attachment_keys.push(parent.clone());
         }
     }
 
@@ -161,20 +223,22 @@ async fn resolve_annotation_parent_titles(
     let mut paper_keys: Vec<String> = Vec::new();
 
     for key in &attachment_keys {
-        if let Some(attachment) = safe_get_item(client, key).await {
-            if let Some(paper_key) = &attachment.data.parent_item {
-                if !paper_key.trim().is_empty() {
-                    attachment_to_paper.insert(attachment.key.clone(), paper_key.clone());
-                    paper_keys.push(paper_key.clone());
-                }
-            }
+        if let Some(attachment) = safe_get_item(client, key).await
+            && let Some(paper_key) = &attachment.data.parent_item
+            && !paper_key.trim().is_empty()
+        {
+            attachment_to_paper.insert(attachment.key.clone(), paper_key.clone());
+            paper_keys.push(paper_key.clone());
         }
     }
 
     let mut paper_title_map: HashMap<String, String> = HashMap::new();
     for key in &paper_keys {
         if let Some(paper) = safe_get_item(client, key).await {
-            paper_title_map.insert(paper.key.clone(), paper.data.title.unwrap_or_else(|| "(untitled)".to_string()));
+            paper_title_map.insert(
+                paper.key.clone(),
+                paper.data.title.unwrap_or_else(|| "(untitled)".to_string()),
+            );
         }
     }
 
@@ -194,17 +258,23 @@ async fn resolve_note_parent_titles(
 ) -> HashMap<String, String> {
     let mut parent_keys: Vec<String> = Vec::new();
     for note in notes {
-        if let Some(parent) = &note.data.parent_item {
-            if !parent.trim().is_empty() {
-                parent_keys.push(parent.clone());
-            }
+        if let Some(parent) = &note.data.parent_item
+            && !parent.trim().is_empty()
+        {
+            parent_keys.push(parent.clone());
         }
     }
 
     let mut parent_map: HashMap<String, String> = HashMap::new();
     for key in &parent_keys {
         if let Some(parent) = safe_get_item(client, key).await {
-            parent_map.insert(parent.key.clone(), parent.data.title.unwrap_or_else(|| "(untitled)".to_string()));
+            parent_map.insert(
+                parent.key.clone(),
+                parent
+                    .data
+                    .title
+                    .unwrap_or_else(|| "(untitled)".to_string()),
+            );
         }
     }
 
@@ -216,19 +286,28 @@ async fn resolve_note_parent_titles(
 // ---------------------------------------------------------------------------
 
 /// Handle the zotero_get_annotations tool.
-pub async fn handle_zotero_get_annotations(client: &ZoteroClient, args: GetAnnotationsArgs) -> String {
+pub async fn handle_zotero_get_annotations(
+    client: &ZoteroClient,
+    args: GetAnnotationsArgs,
+) -> String {
     match handle_zotero_get_annotations_inner(client, args).await {
         Ok(s) => s,
         Err(e) => format!("Error: {}", e),
     }
 }
 
-async fn handle_zotero_get_annotations_inner(client: &ZoteroClient, args: GetAnnotationsArgs) -> anyhow::Result<String> {
+async fn handle_zotero_get_annotations_inner(
+    client: &ZoteroClient,
+    args: GetAnnotationsArgs,
+) -> anyhow::Result<String> {
     let limit = normalize_limit(args.limit, 20, 500) as usize;
 
     if let Some(item_key) = &args.item_key {
         let parent = client.get_item(item_key).await?;
-        let parent_title = parent.data.title.unwrap_or_else(|| "(untitled)".to_string());
+        let parent_title = parent
+            .data
+            .title
+            .unwrap_or_else(|| "(untitled)".to_string());
 
         let children = client.get_item_children(item_key).await?;
         let mut annotations: Vec<ZoteroItem> = children
@@ -244,7 +323,12 @@ async fn handle_zotero_get_annotations_inner(client: &ZoteroClient, args: GetAnn
                 .into_iter()
                 .filter(|item| {
                     item.data.item_type == "attachment"
-                        && item.data.content_type.as_deref().unwrap_or("").contains("pdf")
+                        && item
+                            .data
+                            .content_type
+                            .as_deref()
+                            .unwrap_or("")
+                            .contains("pdf")
                 })
                 .collect();
 
@@ -308,7 +392,10 @@ pub async fn handle_zotero_get_notes(client: &ZoteroClient, args: GetNotesArgs) 
     }
 }
 
-async fn handle_zotero_get_notes_inner(client: &ZoteroClient, args: GetNotesArgs) -> anyhow::Result<String> {
+async fn handle_zotero_get_notes_inner(
+    client: &ZoteroClient,
+    args: GetNotesArgs,
+) -> anyhow::Result<String> {
     let limit = normalize_limit(Some(args.limit), 20, 500) as usize;
 
     if let Some(query) = &args.query {
@@ -362,8 +449,18 @@ async fn handle_zotero_get_notes_inner(client: &ZoteroClient, args: GetNotesArgs
             let matched_annotations: Vec<ZoteroItem> = annotation_candidates
                 .into_iter()
                 .filter(|annotation| {
-                    let text = annotation.data.annotation_text.as_deref().unwrap_or("").to_lowercase();
-                    let comment = annotation.data.annotation_comment.as_deref().unwrap_or("").to_lowercase();
+                    let text = annotation
+                        .data
+                        .annotation_text
+                        .as_deref()
+                        .unwrap_or("")
+                        .to_lowercase();
+                    let comment = annotation
+                        .data
+                        .annotation_comment
+                        .as_deref()
+                        .unwrap_or("")
+                        .to_lowercase();
                     text.contains(&query_lower) || comment.contains(&query_lower)
                 })
                 .collect();
@@ -374,7 +471,8 @@ async fn handle_zotero_get_notes_inner(client: &ZoteroClient, args: GetNotesArgs
             }
 
             let note_parent_titles = resolve_note_parent_titles(client, &matched_notes).await;
-            let annotation_parent_titles = resolve_annotation_parent_titles(client, &matched_annotations).await;
+            let annotation_parent_titles =
+                resolve_annotation_parent_titles(client, &matched_annotations).await;
 
             let note_blocks: Vec<String> = matched_notes
                 .iter()
@@ -383,14 +481,24 @@ async fn handle_zotero_get_notes_inner(client: &ZoteroClient, args: GetNotesArgs
                 .map(|(idx, note)| {
                     let parent_key = note.data.parent_item.clone().unwrap_or_default();
                     let parent_title = note_parent_titles.get(&parent_key).cloned();
-                    let content = truncate(&clean_html(note.data.note.as_deref().unwrap_or(""), true), 500);
+                    let content = truncate(
+                        &clean_html(note.data.note.as_deref().unwrap_or(""), true),
+                        500,
+                    );
 
                     let mut lines: Vec<String> = Vec::new();
                     lines.push(format!("{}. [Note] {}", idx + 1, note.key));
                     if let Some(pt) = parent_title {
                         lines.push(format!("   - Parent: {}", pt));
                     }
-                    lines.push(format!("   - Content: {}", if content.is_empty() { "(empty)" } else { &content }));
+                    lines.push(format!(
+                        "   - Content: {}",
+                        if content.is_empty() {
+                            "(empty)"
+                        } else {
+                            &content
+                        }
+                    ));
                     lines.join("\n")
                 })
                 .collect();
@@ -448,14 +556,23 @@ async fn handle_zotero_get_notes_inner(client: &ZoteroClient, args: GetNotesArgs
         .enumerate()
         .map(|(idx, note)| {
             let cleaned = clean_html(note.data.note.as_deref().unwrap_or(""), true);
-            let text = if args.truncate { truncate(&cleaned, 500) } else { cleaned };
+            let text = if args.truncate {
+                truncate(&cleaned, 500)
+            } else {
+                cleaned
+            };
             let parent_key = note.data.parent_item.clone().unwrap_or_default();
             let parent_title = parent_titles.get(&parent_key).cloned();
             let tags: Vec<String> = note
                 .data
                 .tags
                 .as_ref()
-                .map(|tags| tags.iter().map(|t| t.tag.clone()).filter(|t| !t.is_empty()).collect())
+                .map(|tags| {
+                    tags.iter()
+                        .map(|t| t.tag.clone())
+                        .filter(|t| !t.is_empty())
+                        .collect()
+                })
                 .unwrap_or_default();
 
             let mut lines: Vec<String> = Vec::new();
@@ -463,8 +580,18 @@ async fn handle_zotero_get_notes_inner(client: &ZoteroClient, args: GetNotesArgs
             if let Some(pt) = parent_title {
                 lines.push(format!("   - Parent: {}", pt));
             }
-            lines.push(format!("   - Tags: {}", if tags.is_empty() { "(none)".to_string() } else { tags.join(", ") }));
-            lines.push(format!("   - Content: {}", if text.is_empty() { "(empty)" } else { &text }));
+            lines.push(format!(
+                "   - Tags: {}",
+                if tags.is_empty() {
+                    "(none)".to_string()
+                } else {
+                    tags.join(", ")
+                }
+            ));
+            lines.push(format!(
+                "   - Content: {}",
+                if text.is_empty() { "(empty)" } else { &text }
+            ));
             lines.join("\n")
         })
         .collect();
@@ -480,7 +607,10 @@ pub async fn handle_zotero_add_note(client: &ZoteroClient, args: AddNoteArgs) ->
     }
 }
 
-async fn handle_zotero_add_note_inner(client: &ZoteroClient, args: AddNoteArgs) -> anyhow::Result<String> {
+async fn handle_zotero_add_note_inner(
+    client: &ZoteroClient,
+    args: AddNoteArgs,
+) -> anyhow::Result<String> {
     if args.note_type == "note" {
         let item_key = args
             .item_key
@@ -495,11 +625,15 @@ async fn handle_zotero_add_note_inner(client: &ZoteroClient, args: AddNoteArgs) 
         // Verify parent item exists
         client.get_item(&item_key).await?;
 
-        let tags: Vec<ZoteroTag> = parse_str_list(args.tags.map(|t| {
-            crate::shared::validators::StringOrList::List(t)
-        }))
+        let tags: Vec<ZoteroTag> = parse_str_list(
+            args.tags
+                .map(crate::shared::validators::StringOrList::List),
+        )
         .into_iter()
-        .map(|tag| ZoteroTag { tag, tag_type: None })
+        .map(|tag| ZoteroTag {
+            tag,
+            tag_type: None,
+        })
         .collect();
 
         let note_html = build_note_html(&note_title, &note_text);

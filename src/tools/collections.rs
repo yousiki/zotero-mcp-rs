@@ -9,8 +9,8 @@ use crate::services::identifiers::resolve_collection_names;
 use crate::shared::formatters::format_item_result;
 use crate::shared::types::{ZoteroCollection, ZoteroCollectionData};
 use crate::shared::validators::{
-    dedupe_strings, handle_write_response, is_collection_key, normalize_limit, parse_str_list,
-    StringOrList,
+    StringOrList, dedupe_strings, handle_write_response, is_collection_key, normalize_limit,
+    parse_str_list,
 };
 
 // ---------------------------------------------------------------------------
@@ -76,7 +76,10 @@ async fn resolve_collection_key(client: &ZoteroClient, ref_: &str) -> anyhow::Re
 // ---------------------------------------------------------------------------
 
 /// Handle the zotero_list_collections tool.
-pub async fn handle_zotero_list_collections(client: &ZoteroClient, args: ListCollectionsArgs) -> String {
+pub async fn handle_zotero_list_collections(
+    client: &ZoteroClient,
+    args: ListCollectionsArgs,
+) -> String {
     match handle_zotero_list_collections_inner(client, args).await {
         Ok(s) => s,
         Err(e) => format!("Error: {}", e),
@@ -103,12 +106,18 @@ async fn handle_zotero_list_collections_inner(
         params.insert("itemType".to_string(), "-attachment".to_string());
         params.insert("sort".to_string(), "dateModified".to_string());
         params.insert("direction".to_string(), "desc".to_string());
-        params.insert("limit".to_string(), normalize_limit(Some(args.limit), 50, 500).to_string());
+        params.insert(
+            "limit".to_string(),
+            normalize_limit(Some(args.limit), 50, 500).to_string(),
+        );
 
         let items = client.get_collection_items(&key, params).await?;
 
         if items.is_empty() {
-            return Ok(format!("Collection '{}' has no items.", collection.data.name));
+            return Ok(format!(
+                "Collection '{}' has no items.",
+                collection.data.name
+            ));
         }
 
         let mut lines = vec![
@@ -169,10 +178,8 @@ async fn handle_zotero_list_collections_inner(
     }
 
     // Build lookup map
-    let by_key: HashMap<String, &ZoteroCollection> = collections
-        .iter()
-        .map(|c| (c.key.clone(), c))
-        .collect();
+    let by_key: HashMap<String, &ZoteroCollection> =
+        collections.iter().map(|c| (c.key.clone(), c)).collect();
 
     // Build parent → children map
     let mut children_by_parent: HashMap<String, Vec<&ZoteroCollection>> = HashMap::new();
@@ -209,7 +216,10 @@ async fn handle_zotero_list_collections_inner(
         lines: &mut Vec<String>,
     ) {
         let indent = "  ".repeat(depth);
-        lines.push(format!("{}- {} ({})", indent, collection.data.name, collection.key));
+        lines.push(format!(
+            "{}- {} ({})",
+            indent, collection.data.name, collection.key
+        ));
 
         if let Some(children) = children_by_parent.get(&collection.key) {
             for child in children {
@@ -291,7 +301,9 @@ async fn handle_zotero_manage_collections_inner(
                 .trim()
                 .to_string();
             if key.is_empty() {
-                return Err(anyhow::anyhow!("collection_key is required for action=delete"));
+                return Err(anyhow::anyhow!(
+                    "collection_key is required for action=delete"
+                ));
             }
 
             let collection = client.get_collection(&key).await?;

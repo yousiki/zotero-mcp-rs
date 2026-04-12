@@ -8,7 +8,7 @@ use serde_json::Value;
 use crate::clients::webdav::WebDavClient;
 use crate::clients::zotero::ZoteroClient;
 use crate::shared::formatters::{clean_html, format_item_result};
-use crate::shared::types::{crossref_type_map, ZoteroCreator, ZoteroItemData, ZoteroTag};
+use crate::shared::types::{ZoteroCreator, ZoteroItemData, ZoteroTag, crossref_type_map};
 use crate::shared::validators::{extract_created_key, handle_write_response};
 
 use super::oa_sources::try_attach_oa_pdf;
@@ -22,8 +22,18 @@ fn encode_uri_component(s: &str) -> String {
     let mut result = String::with_capacity(s.len() * 2);
     for byte in s.bytes() {
         match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9'
-            | b'-' | b'_' | b'.' | b'!' | b'~' | b'*' | b'\'' | b'(' | b')' => {
+            b'A'..=b'Z'
+            | b'a'..=b'z'
+            | b'0'..=b'9'
+            | b'-'
+            | b'_'
+            | b'.'
+            | b'!'
+            | b'~'
+            | b'*'
+            | b'\''
+            | b'('
+            | b')' => {
                 result.push(byte as char);
             }
             _ => {
@@ -163,15 +173,31 @@ pub fn parse_crossref_date(work: &CrossrefWork) -> Option<String> {
 pub fn map_crossref_creators(work: &CrossrefWork) -> Vec<ZoteroCreator> {
     let mut out = Vec::new();
 
-    fn push_people(people: &Option<Vec<CrossrefPerson>>, creator_type: &str, out: &mut Vec<ZoteroCreator>) {
+    fn push_people(
+        people: &Option<Vec<CrossrefPerson>>,
+        creator_type: &str,
+        out: &mut Vec<ZoteroCreator>,
+    ) {
         let people = match people {
             Some(p) => p,
             None => return,
         };
         for person in people {
-            let given = person.given.as_deref().map(str::trim).filter(|s| !s.is_empty());
-            let family = person.family.as_deref().map(str::trim).filter(|s| !s.is_empty());
-            let name = person.name.as_deref().map(str::trim).filter(|s| !s.is_empty());
+            let given = person
+                .given
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty());
+            let family = person
+                .family
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty());
+            let name = person
+                .name
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty());
 
             if let Some(name) = name {
                 out.push(ZoteroCreator {
@@ -277,32 +303,31 @@ pub async fn add_via_crossref(
     };
 
     // Set optional fields only if valid for this item type (guarded by template)
-    if template.volume.is_some() || template.extra_fields.contains_key("volume") {
-        if let Some(v) = &work.volume {
-            item_data.volume = Some(v.clone());
-        }
+    if (template.volume.is_some() || template.extra_fields.contains_key("volume"))
+        && let Some(v) = &work.volume
+    {
+        item_data.volume = Some(v.clone());
     }
-    if template.issue.is_some() || template.extra_fields.contains_key("issue") {
-        if let Some(v) = &work.issue {
-            item_data.issue = Some(v.clone());
-        }
+    if (template.issue.is_some() || template.extra_fields.contains_key("issue"))
+        && let Some(v) = &work.issue
+    {
+        item_data.issue = Some(v.clone());
     }
-    if template.pages.is_some() || template.extra_fields.contains_key("pages") {
-        if let Some(v) = &work.page {
-            item_data.pages = Some(v.clone());
-        }
+    if (template.pages.is_some() || template.extra_fields.contains_key("pages"))
+        && let Some(v) = &work.page
+    {
+        item_data.pages = Some(v.clone());
     }
-    if template.publisher.is_some() || template.extra_fields.contains_key("publisher") {
-        if let Some(v) = &work.publisher {
-            item_data.publisher = Some(v.clone());
-        }
+    if (template.publisher.is_some() || template.extra_fields.contains_key("publisher"))
+        && let Some(v) = &work.publisher
+    {
+        item_data.publisher = Some(v.clone());
     }
-    if template.issn.is_some() || template.extra_fields.contains_key("ISSN") {
-        if let Some(issns) = &work.issn {
-            if let Some(first) = issns.first() {
-                item_data.issn = Some(first.clone());
-            }
-        }
+    if (template.issn.is_some() || template.extra_fields.contains_key("ISSN"))
+        && let Some(issns) = &work.issn
+        && let Some(first) = issns.first()
+    {
+        item_data.issn = Some(first.clone());
     }
 
     // Map container-title to the correct field based on item type
@@ -335,14 +360,8 @@ pub async fn add_via_crossref(
 
     // 5. Try OA PDF attachment
     let crossref_value = serde_json::to_value(&work).ok();
-    let attached = try_attach_oa_pdf(
-        client,
-        &created_key,
-        doi,
-        webdav,
-        crossref_value.as_ref(),
-    )
-    .await;
+    let attached =
+        try_attach_oa_pdf(client, &created_key, doi, webdav, crossref_value.as_ref()).await;
 
     // 6. Format result
     let created_item = client.get_item(&created_key).await?;
@@ -549,7 +568,10 @@ mod tests {
         assert_eq!(work.title.as_ref().unwrap()[0], "Test Paper");
         assert_eq!(work.doi.as_deref(), Some("10.1234/test"));
         assert_eq!(work.volume.as_deref(), Some("42"));
-        assert_eq!(work.abstract_note.as_deref(), Some("<p>This is the abstract.</p>"));
+        assert_eq!(
+            work.abstract_note.as_deref(),
+            Some("<p>This is the abstract.</p>")
+        );
         assert_eq!(parse_crossref_date(&work), Some("2024-01-15".to_string()));
     }
 }

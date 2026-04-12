@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use regex::Regex;
 
 use crate::shared::types::ZoteroItem;
@@ -20,7 +20,10 @@ pub fn normalize_doi(raw: &str) -> Result<String> {
     let re = Regex::new(r"(?i)10\.\d{4,9}/[\w.()\-;/:]+")?;
     let doi = re
         .find(&decoded)
-        .map(|m| m.as_str().trim_end_matches(['>', ']', ')', '}', '.', ',', ';']))
+        .map(|m| {
+            m.as_str()
+                .trim_end_matches(['>', ']', ')', '}', '.', ',', ';'])
+        })
         .ok_or_else(|| anyhow!("Invalid DOI"))?;
     Ok(doi.to_string())
 }
@@ -28,7 +31,9 @@ pub fn normalize_doi(raw: &str) -> Result<String> {
 /// Normalize an arXiv ID to canonical form without version suffix.
 pub fn normalize_arxiv_id(raw: &str) -> Result<String> {
     let trimmed = raw.trim();
-    let re = Regex::new(r"(?i)(?:arxiv:|https?://arxiv\.org/(?:abs|pdf)/)?([a-z-]+/\d{7}|\d{4}\.\d{4,5})(?:v\d+)?")?;
+    let re = Regex::new(
+        r"(?i)(?:arxiv:|https?://arxiv\.org/(?:abs|pdf)/)?([a-z-]+/\d{7}|\d{4}\.\d{4,5})(?:v\d+)?",
+    )?;
     let caps = re
         .captures(trimmed)
         .ok_or_else(|| anyhow!("Invalid arXiv ID"))?;
@@ -81,12 +86,13 @@ fn percent_decode(input: &str) -> String {
     let mut i = 0;
 
     while i < bytes.len() {
-        if bytes[i] == b'%' && i + 2 < bytes.len() {
-            if let (Some(h), Some(l)) = (hex_val(bytes[i + 1]), hex_val(bytes[i + 2])) {
-                out.push((h * 16 + l) as char);
-                i += 3;
-                continue;
-            }
+        if bytes[i] == b'%'
+            && i + 2 < bytes.len()
+            && let (Some(h), Some(l)) = (hex_val(bytes[i + 1]), hex_val(bytes[i + 2]))
+        {
+            out.push((h * 16 + l) as char);
+            i += 3;
+            continue;
         }
 
         out.push(bytes[i] as char);
@@ -117,7 +123,10 @@ pub async fn find_existing_by_arxiv_id(_arxiv_id: &str) -> Option<ZoteroItem> {
 
 /// Stub for resolving collection names to keys.
 /// Returns empty vector for now (name resolution not yet implemented).
-pub async fn resolve_collection_names(_client: &crate::clients::zotero::ZoteroClient, names: &[String]) -> Vec<String> {
+pub async fn resolve_collection_names(
+    _client: &crate::clients::zotero::ZoteroClient,
+    names: &[String],
+) -> Vec<String> {
     // TODO: implement collection name resolution
     let _ = names;
     vec![]
@@ -129,22 +138,34 @@ mod tests {
 
     #[test]
     fn normalize_doi_plain() {
-        assert_eq!(normalize_doi("10.1038/s41586-020-2649-2").unwrap(), "10.1038/s41586-020-2649-2");
+        assert_eq!(
+            normalize_doi("10.1038/s41586-020-2649-2").unwrap(),
+            "10.1038/s41586-020-2649-2"
+        );
     }
 
     #[test]
     fn normalize_doi_url() {
-        assert_eq!(normalize_doi("https://doi.org/10.1038/s41586-020-2649-2").unwrap(), "10.1038/s41586-020-2649-2");
+        assert_eq!(
+            normalize_doi("https://doi.org/10.1038/s41586-020-2649-2").unwrap(),
+            "10.1038/s41586-020-2649-2"
+        );
     }
 
     #[test]
     fn normalize_doi_prefix() {
-        assert_eq!(normalize_doi("doi:10.1038/s41586-020-2649-2").unwrap(), "10.1038/s41586-020-2649-2");
+        assert_eq!(
+            normalize_doi("doi:10.1038/s41586-020-2649-2").unwrap(),
+            "10.1038/s41586-020-2649-2"
+        );
     }
 
     #[test]
     fn normalize_doi_decodes_percent_encoding() {
-        assert_eq!(normalize_doi("https://doi.org/10.1000%2F182").unwrap(), "10.1000/182");
+        assert_eq!(
+            normalize_doi("https://doi.org/10.1000%2F182").unwrap(),
+            "10.1000/182"
+        );
     }
 
     #[test]
@@ -171,17 +192,26 @@ mod tests {
 
     #[test]
     fn normalize_arxiv_old_style() {
-        assert_eq!(normalize_arxiv_id("hep-ph/0001234").unwrap(), "hep-ph/0001234");
+        assert_eq!(
+            normalize_arxiv_id("hep-ph/0001234").unwrap(),
+            "hep-ph/0001234"
+        );
     }
 
     #[test]
     fn normalize_arxiv_url() {
-        assert_eq!(normalize_arxiv_id("https://arxiv.org/abs/2301.07041v2").unwrap(), "2301.07041");
+        assert_eq!(
+            normalize_arxiv_id("https://arxiv.org/abs/2301.07041v2").unwrap(),
+            "2301.07041"
+        );
     }
 
     #[test]
     fn normalize_arxiv_prefix() {
-        assert_eq!(normalize_arxiv_id("arxiv:hep-ph/0001234v3").unwrap(), "hep-ph/0001234");
+        assert_eq!(
+            normalize_arxiv_id("arxiv:hep-ph/0001234v3").unwrap(),
+            "hep-ph/0001234"
+        );
     }
 
     #[test]
@@ -192,13 +222,19 @@ mod tests {
     #[test]
     fn detect_doi() {
         assert_eq!(detect_input_type("10.1038/nature123"), InputType::Doi);
-        assert_eq!(detect_input_type("https://doi.org/10.1234/test"), InputType::Doi);
+        assert_eq!(
+            detect_input_type("https://doi.org/10.1234/test"),
+            InputType::Doi
+        );
     }
 
     #[test]
     fn detect_arxiv() {
         assert_eq!(detect_input_type("2301.07041"), InputType::Arxiv);
-        assert_eq!(detect_input_type("https://arxiv.org/abs/2301.07041"), InputType::Arxiv);
+        assert_eq!(
+            detect_input_type("https://arxiv.org/abs/2301.07041"),
+            InputType::Arxiv
+        );
     }
 
     #[test]
@@ -222,7 +258,13 @@ mod tests {
 
     #[test]
     fn detect_url() {
-        assert_eq!(detect_input_type("https://example.com/paper"), InputType::Url);
-        assert_eq!(detect_input_type("http://journal.org/article"), InputType::Url);
+        assert_eq!(
+            detect_input_type("https://example.com/paper"),
+            InputType::Url
+        );
+        assert_eq!(
+            detect_input_type("http://journal.org/article"),
+            InputType::Url
+        );
     }
 }

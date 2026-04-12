@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
+use rmcp::schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use rmcp::schemars::{self, JsonSchema};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]

@@ -40,7 +40,11 @@ pub struct ZoteroClient {
 }
 
 impl ZoteroClient {
-    pub fn new(api_key: impl Into<String>, library_id: impl Into<String>, library_type: impl Into<String>) -> Self {
+    pub fn new(
+        api_key: impl Into<String>,
+        library_id: impl Into<String>,
+        library_type: impl Into<String>,
+    ) -> Self {
         Self::with_base_url(api_key, library_id, library_type, "https://api.zotero.org")
     }
 
@@ -55,13 +59,22 @@ impl ZoteroClient {
             api_key: api_key.into(),
             library_id: library_id.into(),
             library_type: library_type.into(),
-            http: Client::builder().no_proxy().build().expect("failed to build reqwest client"),
+            http: Client::builder()
+                .no_proxy()
+                .build()
+                .expect("failed to build reqwest client"),
         }
     }
 
     pub async fn get_items(&self, params: HashMap<String, String>) -> Result<Vec<ZoteroItem>> {
-        self.request_json(Method::GET, &format!("{}/items", self.library_path()), Some(&params), None::<&Value>, None)
-            .await
+        self.request_json(
+            Method::GET,
+            &format!("{}/items", self.library_path()),
+            Some(&params),
+            None::<&Value>,
+            None,
+        )
+        .await
     }
 
     pub async fn get_item(&self, key: &str) -> Result<ZoteroItem> {
@@ -97,7 +110,10 @@ impl ZoteroClient {
         .await
     }
 
-    pub async fn get_collections(&self, params: HashMap<String, String>) -> Result<Vec<ZoteroCollection>> {
+    pub async fn get_collections(
+        &self,
+        params: HashMap<String, String>,
+    ) -> Result<Vec<ZoteroCollection>> {
         self.request_json(
             Method::GET,
             &format!("{}/collections", self.library_path()),
@@ -119,7 +135,11 @@ impl ZoteroClient {
         .await
     }
 
-    pub async fn get_collection_items(&self, key: &str, params: HashMap<String, String>) -> Result<Vec<ZoteroItem>> {
+    pub async fn get_collection_items(
+        &self,
+        key: &str,
+        params: HashMap<String, String>,
+    ) -> Result<Vec<ZoteroItem>> {
         self.request_json(
             Method::GET,
             &format!("{}/collections/{}/items", self.library_path(), key),
@@ -152,14 +172,24 @@ impl ZoteroClient {
         .await
     }
 
-    pub async fn get_item_template(&self, item_type: &str, link_mode: Option<&str>) -> Result<ZoteroItemData> {
+    pub async fn get_item_template(
+        &self,
+        item_type: &str,
+        link_mode: Option<&str>,
+    ) -> Result<ZoteroItemData> {
         let mut params = HashMap::from([("itemType".to_string(), item_type.to_string())]);
         if let Some(link_mode) = link_mode {
             params.insert("linkMode".to_string(), link_mode.to_string());
         }
 
-        self.request_json(Method::GET, "/items/new", Some(&params), None::<&Value>, None)
-            .await
+        self.request_json(
+            Method::GET,
+            "/items/new",
+            Some(&params),
+            None::<&Value>,
+            None,
+        )
+        .await
     }
 
     pub async fn create_items(&self, items: &[ZoteroItemData]) -> Result<WriteResponse> {
@@ -173,7 +203,12 @@ impl ZoteroClient {
         .await
     }
 
-    pub async fn update_item(&self, key: &str, data: &ZoteroItemData, version: Option<i64>) -> Result<()> {
+    pub async fn update_item(
+        &self,
+        key: &str,
+        data: &ZoteroItemData,
+        version: Option<i64>,
+    ) -> Result<()> {
         self.request_empty(
             Method::PATCH,
             &format!("{}/items/{}", self.library_path(), key),
@@ -186,15 +221,13 @@ impl ZoteroClient {
 
     pub async fn delete_item(&self, key: &str, version: Option<i64>) -> Result<bool> {
         let response = self
-            .send(
-                self.request_builder(
-                    Method::DELETE,
-                    &format!("{}/items/{}", self.library_path(), key),
-                    None,
-                    None::<&Value>,
-                    version.map(version_header),
-                ),
-            )
+            .send(self.request_builder(
+                Method::DELETE,
+                &format!("{}/items/{}", self.library_path(), key),
+                None,
+                None::<&Value>,
+                version.map(version_header),
+            ))
             .await?;
         Ok(response.status().as_u16() == 204)
     }
@@ -237,15 +270,13 @@ impl ZoteroClient {
 
     pub async fn delete_collection(&self, key: &str, version: Option<i64>) -> Result<bool> {
         let response = self
-            .send(
-                self.request_builder(
-                    Method::DELETE,
-                    &format!("{}/collections/{}", self.library_path(), key),
-                    None,
-                    None::<&Value>,
-                    version.map(version_header),
-                ),
-            )
+            .send(self.request_builder(
+                Method::DELETE,
+                &format!("{}/collections/{}", self.library_path(), key),
+                None,
+                None::<&Value>,
+                version.map(version_header),
+            ))
             .await?;
         Ok(response.status().as_u16() == 204)
     }
@@ -280,11 +311,11 @@ impl ZoteroClient {
 
             results.append(&mut page);
 
-            if let Some(max_items) = max_items {
-                if results.len() >= max_items {
-                    results.truncate(max_items);
-                    break;
-                }
+            if let Some(max_items) = max_items
+                && results.len() >= max_items
+            {
+                results.truncate(max_items);
+                break;
             }
 
             if page_len < limit {
@@ -354,7 +385,9 @@ impl ZoteroClient {
         T: for<'de> Deserialize<'de>,
         B: Serialize + ?Sized,
     {
-        let response = self.send(self.request_builder(method, path, params, body, extra_header)).await?;
+        let response = self
+            .send(self.request_builder(method, path, params, body, extra_header))
+            .await?;
         let text = response.text().await?;
         Ok(serde_json::from_str(&text)?)
     }
@@ -471,8 +504,14 @@ mod tests {
             .unwrap();
 
         assert_eq!(results.len(), 250);
-        assert_eq!(results.first().map(|item| item.key.as_str()), Some("ITEM000"));
-        assert_eq!(results.last().map(|item| item.key.as_str()), Some("ITEM249"));
+        assert_eq!(
+            results.first().map(|item| item.key.as_str()),
+            Some("ITEM000")
+        );
+        assert_eq!(
+            results.last().map(|item| item.key.as_str()),
+            Some("ITEM249")
+        );
     }
 
     #[tokio::test]
@@ -537,7 +576,9 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/users/12345/collections"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(vec![collection("COL1", "One", 1)]))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(vec![collection("COL1", "One", 1)]),
+            )
             .mount(&server)
             .await;
 
@@ -556,7 +597,9 @@ mod tests {
             .and(path("/users/12345/items"))
             .and(query_param("start", "0"))
             .and(query_param("limit", "100"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(vec![item("ITEM001", "Only", 1)]))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(vec![item("ITEM001", "Only", 1)]),
+            )
             .mount(&server)
             .await;
 

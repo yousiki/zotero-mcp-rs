@@ -320,7 +320,9 @@ pub fn parse_arxiv_atom(xml: &str) -> Result<ArxivParsed, String> {
         return Err("Title is empty in arXiv entry".to_string());
     }
 
-    let summary = xml_unescape(&first_xml_tag(entry, "summary")).trim().to_string();
+    let summary = xml_unescape(&first_xml_tag(entry, "summary"))
+        .trim()
+        .to_string();
     let published = first_xml_tag(entry, "published");
     let updated = first_xml_tag(entry, "updated");
     let abs_url = first_xml_tag(entry, "id");
@@ -349,17 +351,12 @@ pub fn parse_arxiv_atom(xml: &str) -> Result<ArxivParsed, String> {
                 .split_whitespace()
                 .collect::<Vec<_>>()
                 .join(" ");
-            if name.is_empty() {
-                None
-            } else {
-                Some(name)
-            }
+            if name.is_empty() { None } else { Some(name) }
         })
         .collect();
 
     // Categories
-    let category_re =
-        Regex::new(r#"(?i)<category[^>]*term=["']([^"']+)["'][^>]*/?\s*>"#).unwrap();
+    let category_re = Regex::new(r#"(?i)<category[^>]*term=["']([^"']+)["'][^>]*/?\s*>"#).unwrap();
     let categories: Vec<String> = category_re
         .captures_iter(entry)
         .filter_map(|caps| caps.get(1).map(|m| m.as_str().to_string()))
@@ -367,8 +364,7 @@ pub fn parse_arxiv_atom(xml: &str) -> Result<ArxivParsed, String> {
 
     // Primary category
     let primary_re =
-        Regex::new(r#"(?i)<arxiv:primary_category[^>]*term=["']([^"']+)["'][^>]*/?\s*>"#)
-            .unwrap();
+        Regex::new(r#"(?i)<arxiv:primary_category[^>]*term=["']([^"']+)["'][^>]*/?\s*>"#).unwrap();
     let primary_category = primary_re
         .captures(entry)
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
@@ -411,10 +407,10 @@ pub fn map_arxiv_category(code: &str) -> Option<String> {
     // If it has a dot, try to build "MainCategory - SubCategory"
     if let Some(dot_pos) = code.find('.') {
         let main = &code[..dot_pos];
-        if let Some(main_name) = ARXIV_CATEGORIES.get(main) {
-            if let Some(sub_name) = ARXIV_CATEGORIES.get(code) {
-                return Some(format!("{} - {}", main_name, sub_name));
-            }
+        if let Some(main_name) = ARXIV_CATEGORIES.get(main)
+            && let Some(sub_name) = ARXIV_CATEGORIES.get(code)
+        {
+            return Some(format!("{} - {}", main_name, sub_name));
         }
     }
     // Direct lookup for main categories or non-dotted legacy codes
@@ -433,12 +429,7 @@ pub fn extract_project_urls(text: &str) -> Vec<String> {
     .unwrap();
 
     let excluded = ["arxiv.org", "doi.org", "dx.doi.org", "creativecommons.org"];
-    let url_indicators = [
-        "github.com",
-        "github.io",
-        "gitlab.com",
-        "huggingface.co",
-    ];
+    let url_indicators = ["github.com", "github.io", "gitlab.com", "huggingface.co"];
 
     let mut seen = std::collections::HashSet::new();
     let mut urls = Vec::new();
@@ -491,8 +482,7 @@ pub async fn add_via_arxiv(
     let xml = response.text().await?;
 
     // 2. Parse XML
-    let parsed =
-        parse_arxiv_atom(&xml).map_err(|e| anyhow::anyhow!("arXiv parse error: {}", e))?;
+    let parsed = parse_arxiv_atom(&xml).map_err(|e| anyhow::anyhow!("arXiv parse error: {}", e))?;
     if parsed.title.is_empty() {
         anyhow::bail!("arXiv metadata not found");
     }
@@ -543,7 +533,9 @@ pub async fn add_via_arxiv(
     let extra_line = if article_id.contains('/') {
         format!("arXiv:{}", article_id)
     } else {
-        format!("arXiv:{} {}", article_id, extra_field).trim().to_string()
+        format!("arXiv:{} {}", article_id, extra_field)
+            .trim()
+            .to_string()
     };
 
     // 6. Get item template and build item data
@@ -580,9 +572,10 @@ pub async fn add_via_arxiv(
     if parsed.doi.is_empty() {
         item_data.publisher = Some("arXiv".to_string());
         if template.extra_fields.contains_key("number") {
-            item_data
-                .extra_fields
-                .insert("number".into(), Value::String(format!("arXiv:{}", article_id)));
+            item_data.extra_fields.insert(
+                "number".into(),
+                Value::String(format!("arXiv:{}", article_id)),
+            );
         }
         if template.extra_fields.contains_key("archiveID") {
             item_data.extra_fields.insert(
@@ -635,9 +628,13 @@ pub async fn add_via_arxiv(
     // 10. Extract project URLs from summary, attach as linked URLs
     let project_urls = extract_project_urls(&parsed.summary);
     for project_url in &project_urls {
-        if let Err(e) =
-            crate::services::pdf::attach_linked_url(client, &created_key, project_url, "Project Page")
-                .await
+        if let Err(e) = crate::services::pdf::attach_linked_url(
+            client,
+            &created_key,
+            project_url,
+            "Project Page",
+        )
+        .await
         {
             tracing::warn!("Failed to attach project URL {}: {}", project_url, e);
         }
@@ -665,7 +662,10 @@ pub async fn add_via_arxiv(
     }
     lines.push(format!("Attached arXiv page: {}", abs_url));
     if !project_urls.is_empty() {
-        lines.push(format!("Attached project pages: {}", project_urls.join(", ")));
+        lines.push(format!(
+            "Attached project pages: {}",
+            project_urls.join(", ")
+        ));
     }
     if !parsed.comment.is_empty() {
         lines.push(format!("Added comment note: {}", parsed.comment));
@@ -756,14 +756,8 @@ mod tests {
             map_arxiv_category("cs"),
             Some("Computer Science".to_string())
         );
-        assert_eq!(
-            map_arxiv_category("math"),
-            Some("Mathematics".to_string())
-        );
-        assert_eq!(
-            map_arxiv_category("stat"),
-            Some("Statistics".to_string())
-        );
+        assert_eq!(map_arxiv_category("math"), Some("Mathematics".to_string()));
+        assert_eq!(map_arxiv_category("stat"), Some("Statistics".to_string()));
         assert_eq!(
             map_arxiv_category("gr-qc"),
             Some("General Relativity and Quantum Cosmology".to_string())
@@ -876,10 +870,7 @@ mod tests {
 
     #[test]
     fn test_normalize_doi_like_valid() {
-        assert_eq!(
-            normalize_doi_like("10.1234/test").unwrap(),
-            "10.1234/test"
-        );
+        assert_eq!(normalize_doi_like("10.1234/test").unwrap(), "10.1234/test");
         assert_eq!(
             normalize_doi_like("https://doi.org/10.1234/test").unwrap(),
             "10.1234/test"
@@ -948,9 +939,6 @@ mod tests {
   <arxiv:primary_category term="math.CO" scheme="http://arxiv.org/schemas/atom"/>
 </entry></feed>"#;
         let parsed = parse_arxiv_atom(xml).unwrap();
-        assert_eq!(
-            parsed.title,
-            "A Very Long Title That Spans Multiple Lines"
-        );
+        assert_eq!(parsed.title, "A Very Long Title That Spans Multiple Lines");
     }
 }

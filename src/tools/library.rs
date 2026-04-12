@@ -9,7 +9,7 @@ use crate::clients::zotero::ZoteroClient;
 use crate::services::identifiers::normalize_doi;
 use crate::shared::formatters::{clean_html, format_item_result};
 use crate::shared::types::ZoteroItem;
-use crate::shared::validators::{dedupe_strings, normalize_limit, parse_str_list, StringOrList};
+use crate::shared::validators::{StringOrList, dedupe_strings, normalize_limit, parse_str_list};
 
 // ---------------------------------------------------------------------------
 // Parameter structs
@@ -94,7 +94,9 @@ fn safe_normalize_doi(value: Option<&str>) -> String {
     match value {
         None => String::new(),
         Some(v) if v.trim().is_empty() => String::new(),
-        Some(v) => normalize_doi(v).map(|d| d.to_lowercase()).unwrap_or_default(),
+        Some(v) => normalize_doi(v)
+            .map(|d| d.to_lowercase())
+            .unwrap_or_default(),
     }
 }
 
@@ -110,7 +112,10 @@ pub async fn handle_zotero_get_recent(client: &ZoteroClient, args: GetRecentArgs
     }
 }
 
-async fn handle_zotero_get_recent_inner(client: &ZoteroClient, args: GetRecentArgs) -> anyhow::Result<String> {
+async fn handle_zotero_get_recent_inner(
+    client: &ZoteroClient,
+    args: GetRecentArgs,
+) -> anyhow::Result<String> {
     let limit = normalize_limit(Some(args.limit), 10, 200);
     let mut params = HashMap::new();
     params.insert("sort".to_string(), "dateAdded".to_string());
@@ -142,7 +147,10 @@ pub async fn handle_zotero_list_tags(client: &ZoteroClient, args: ListTagsArgs) 
     }
 }
 
-async fn handle_zotero_list_tags_inner(client: &ZoteroClient, args: ListTagsArgs) -> anyhow::Result<String> {
+async fn handle_zotero_list_tags_inner(
+    client: &ZoteroClient,
+    args: ListTagsArgs,
+) -> anyhow::Result<String> {
     let limit = normalize_limit(Some(args.limit), 500, 10000) as usize;
 
     let paginate_params = HashMap::new();
@@ -165,7 +173,8 @@ async fn handle_zotero_list_tags_inner(client: &ZoteroClient, args: ListTagsArgs
     let mut grouped: HashMap<String, Vec<String>> = HashMap::new();
     for tag in &tags {
         let initial = tag.chars().next().unwrap_or('#').to_uppercase().to_string();
-        let bucket = if initial.len() == 1 && initial.chars().next().unwrap().is_ascii_alphabetic() {
+        let bucket = if initial.len() == 1 && initial.chars().next().unwrap().is_ascii_alphabetic()
+        {
             initial
         } else {
             "#".to_string()
@@ -197,7 +206,10 @@ pub async fn handle_zotero_deduplicate(client: &ZoteroClient, args: DeduplicateA
     }
 }
 
-async fn handle_zotero_deduplicate_inner(client: &ZoteroClient, args: DeduplicateArgs) -> anyhow::Result<String> {
+async fn handle_zotero_deduplicate_inner(
+    client: &ZoteroClient,
+    args: DeduplicateArgs,
+) -> anyhow::Result<String> {
     if args.action == "find" {
         let limit = normalize_limit(Some(args.limit), 50, 500) as usize;
 
@@ -214,7 +226,9 @@ async fn handle_zotero_deduplicate_inner(client: &ZoteroClient, args: Deduplicat
         } else {
             let mut params = HashMap::new();
             params.insert("itemType".to_string(), "-attachment".to_string());
-            client.paginate(|p| client.get_items(p), params, Some(5000)).await?
+            client
+                .paginate(|p| client.get_items(p), params, Some(5000))
+                .await?
         };
 
         let mut title_groups: HashMap<String, Vec<(String, String, String)>> = HashMap::new();
@@ -226,7 +240,10 @@ async fn handle_zotero_deduplicate_inner(client: &ZoteroClient, args: Deduplicat
             let row = (item.key.clone(), title.clone(), doi.clone());
             let normalized_title = normalize_title(&title);
             if !normalized_title.is_empty() {
-                title_groups.entry(normalized_title).or_default().push(row.clone());
+                title_groups
+                    .entry(normalized_title)
+                    .or_default()
+                    .push(row.clone());
             }
             if !doi.is_empty() {
                 doi_groups.entry(doi).or_default().push(row);
@@ -249,8 +266,16 @@ async fn handle_zotero_deduplicate_inner(client: &ZoteroClient, args: Deduplicat
                 idx += 1;
                 let title = &group[0].1;
                 let doi = &group[0].2;
-                let title_display = if title.is_empty() { "(untitled)" } else { title.as_str() };
-                let doi_suffix = if doi.is_empty() { String::new() } else { format!(" [{}]", doi) };
+                let title_display = if title.is_empty() {
+                    "(untitled)"
+                } else {
+                    title.as_str()
+                };
+                let doi_suffix = if doi.is_empty() {
+                    String::new()
+                } else {
+                    format!(" [{}]", doi)
+                };
                 lines.push(format!("{}. {}{}", idx, title_display, doi_suffix));
                 for entry in group.iter() {
                     lines.push(format!("  - {}", entry.0));
@@ -316,7 +341,10 @@ async fn handle_zotero_deduplicate_inner(client: &ZoteroClient, args: Deduplicat
     let mut child_count = 0usize;
 
     for (i, duplicate) in duplicates.iter().enumerate() {
-        let children = duplicate_children.get(i).map(|v| v.as_slice()).unwrap_or(&[]);
+        let children = duplicate_children
+            .get(i)
+            .map(|v| v.as_slice())
+            .unwrap_or(&[]);
         child_count += children.len();
         for tag in duplicate.data.tags.as_ref().unwrap_or(&vec![]) {
             merged_tag_names.insert(tag.tag.clone());
@@ -327,13 +355,15 @@ async fn handle_zotero_deduplicate_inner(client: &ZoteroClient, args: Deduplicat
     }
 
     if !args.confirm {
-        let preview = ["Dry run preview:".to_string(),
+        let preview = [
+            "Dry run preview:".to_string(),
             format!("Keeper: {}", keeper.key),
             format!("Duplicates: {}", duplicate_keys.join(", ")),
             format!("Merged tags: {}", merged_tag_names.len()),
             format!("Merged collections: {}", merged_collections.len()),
             format!("Children to re-parent: {}", child_count),
-            "Set confirm=true to execute merge.".to_string()];
+            "Set confirm=true to execute merge.".to_string(),
+        ];
         return Ok(preview.join("\n"));
     }
 
@@ -349,25 +379,33 @@ async fn handle_zotero_deduplicate_inner(client: &ZoteroClient, args: Deduplicat
             .collect(),
     );
     keeper_data.collections = Some(merged_collections.into_iter().collect());
-    client.update_item(&keeper.key, &keeper_data, keeper.version).await?;
+    client
+        .update_item(&keeper.key, &keeper_data, keeper.version)
+        .await?;
 
     // Re-parent children to keeper
     for children in &duplicate_children {
         for child in children {
             let mut child_data = child.data.clone();
             child_data.parent_item = Some(keeper.key.clone());
-            client.update_item(&child.key, &child_data, child.version).await?;
+            client
+                .update_item(&child.key, &child_data, child.version)
+                .await?;
         }
     }
 
     // Delete duplicates
     for duplicate in &duplicates {
-        client.delete_item(&duplicate.key, duplicate.version).await?;
+        client
+            .delete_item(&duplicate.key, duplicate.version)
+            .await?;
     }
 
-    let result = [format!("Merged into keeper: {}", keeper.key),
+    let result = [
+        format!("Merged into keeper: {}", keeper.key),
         format!("Duplicates trashed: {}", duplicates.len()),
-        format!("Children re-parented: {}", child_count)];
+        format!("Children re-parented: {}", child_count),
+    ];
     Ok(result.join("\n"))
 }
 
@@ -383,22 +421,28 @@ async fn handle_fetch_inner(client: &ZoteroClient, args: FetchArgs) -> anyhow::R
     let item = client.get_item(&args.id).await?;
     let children = client.get_item_children(&args.id).await?;
 
-    let notes: Vec<&ZoteroItem> = children.iter().filter(|c| c.data.item_type == "note").collect();
-    let annotations: Vec<&ZoteroItem> = children.iter().filter(|c| c.data.item_type == "annotation").collect();
+    let notes: Vec<&ZoteroItem> = children
+        .iter()
+        .filter(|c| c.data.item_type == "note")
+        .collect();
+    let annotations: Vec<&ZoteroItem> = children
+        .iter()
+        .filter(|c| c.data.item_type == "annotation")
+        .collect();
 
     let mut text_parts: Vec<String> = Vec::new();
     text_parts.push(item.data.title.as_deref().unwrap_or("").to_string());
 
-    if let Some(abstract_note) = &item.data.abstract_note {
-        if !abstract_note.is_empty() {
-            text_parts.push(clean_html(abstract_note, false));
-        }
+    if let Some(abstract_note) = &item.data.abstract_note
+        && !abstract_note.is_empty()
+    {
+        text_parts.push(clean_html(abstract_note, false));
     }
 
-    if let Some(extra) = &item.data.extra {
-        if !extra.is_empty() {
-            text_parts.push(extra.clone());
-        }
+    if let Some(extra) = &item.data.extra
+        && !extra.is_empty()
+    {
+        text_parts.push(extra.clone());
     }
 
     for note in &notes {
@@ -408,15 +452,15 @@ async fn handle_fetch_inner(client: &ZoteroClient, args: FetchArgs) -> anyhow::R
 
     for annotation in &annotations {
         let mut segments: Vec<String> = Vec::new();
-        if let Some(text) = &annotation.data.annotation_text {
-            if !text.is_empty() {
-                segments.push(text.clone());
-            }
+        if let Some(text) = &annotation.data.annotation_text
+            && !text.is_empty()
+        {
+            segments.push(text.clone());
         }
-        if let Some(comment) = &annotation.data.annotation_comment {
-            if !comment.is_empty() {
-                segments.push(comment.clone());
-            }
+        if let Some(comment) = &annotation.data.annotation_comment
+            && !comment.is_empty()
+        {
+            segments.push(comment.clone());
         }
         let segment = segments.join("\n");
         if !segment.is_empty() {

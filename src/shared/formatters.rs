@@ -129,44 +129,43 @@ pub fn format_item_result(item: &ZoteroItem, index: Option<usize>, show_tags: bo
         lines.push(format!("  - Creators: {}", creators_str));
     }
 
-    if let Some(date) = &data.date {
-        if !date.is_empty() {
-            lines.push(format!("  - Date: {}", date));
-        }
+    if let Some(date) = &data.date
+        && !date.is_empty()
+    {
+        lines.push(format!("  - Date: {}", date));
     }
 
-    if let Some(pub_title) = &data.publication_title {
-        if !pub_title.is_empty() {
-            lines.push(format!("  - Publication: {}", pub_title));
-        }
+    if let Some(pub_title) = &data.publication_title
+        && !pub_title.is_empty()
+    {
+        lines.push(format!("  - Publication: {}", pub_title));
     }
 
-    if let Some(doi) = &data.doi {
-        if !doi.is_empty() {
-            lines.push(format!("  - DOI: {}", doi));
-        }
+    if let Some(doi) = &data.doi
+        && !doi.is_empty()
+    {
+        lines.push(format!("  - DOI: {}", doi));
     }
 
-    if show_tags {
-        if let Some(tags) = &data.tags {
-            if !tags.is_empty() {
-                let tag_str: String = tags
-                    .iter()
-                    .map(|t| t.tag.as_str())
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                lines.push(format!("  - Tags: {}", tag_str));
-            }
-        }
+    if show_tags
+        && let Some(tags) = &data.tags
+        && !tags.is_empty()
+    {
+        let tag_str: String = tags
+            .iter()
+            .map(|t| t.tag.as_str())
+            .collect::<Vec<_>>()
+            .join(", ");
+        lines.push(format!("  - Tags: {}", tag_str));
     }
 
-    if let Some(abstract_note) = &data.abstract_note {
-        if !abstract_note.is_empty() {
-            let cleaned = clean_html(abstract_note, true);
-            let shortened = truncate(&cleaned, abstract_len);
-            if !shortened.is_empty() {
-                lines.push(format!("  - Abstract: {}", shortened));
-            }
+    if let Some(abstract_note) = &data.abstract_note
+        && !abstract_note.is_empty()
+    {
+        let cleaned = clean_html(abstract_note, true);
+        let shortened = truncate(&cleaned, abstract_len);
+        if !shortened.is_empty() {
+            lines.push(format!("  - Abstract: {}", shortened));
         }
     }
 
@@ -188,76 +187,75 @@ pub fn format_item_metadata(item: &ZoteroItem, include_abstract: bool) -> String
     if !creators_str.is_empty() {
         lines.push(format!("- **Creators:** {}", creators_str));
     }
-    if let Some(v) = &data.date {
-        if !v.is_empty() {
-            lines.push(format!("- **Date:** {}", v));
-        }
+    if let Some(v) = &data.date
+        && !v.is_empty()
+    {
+        lines.push(format!("- **Date:** {}", v));
     }
-    if let Some(v) = &data.publication_title {
-        if !v.is_empty() {
-            lines.push(format!("- **Publication:** {}", v));
-        }
+    if let Some(v) = &data.publication_title
+        && !v.is_empty()
+    {
+        lines.push(format!("- **Publication:** {}", v));
     }
-    if let Some(v) = &data.volume {
-        if !v.is_empty() {
-            lines.push(format!("- **Volume:** {}", v));
-        }
+    if let Some(v) = &data.volume
+        && !v.is_empty()
+    {
+        lines.push(format!("- **Volume:** {}", v));
     }
-    if let Some(v) = &data.issue {
-        if !v.is_empty() {
-            lines.push(format!("- **Issue:** {}", v));
-        }
+    if let Some(v) = &data.issue
+        && !v.is_empty()
+    {
+        lines.push(format!("- **Issue:** {}", v));
     }
-    if let Some(v) = &data.pages {
-        if !v.is_empty() {
-            lines.push(format!("- **Pages:** {}", v));
-        }
+    if let Some(v) = &data.pages
+        && !v.is_empty()
+    {
+        lines.push(format!("- **Pages:** {}", v));
     }
-    if let Some(v) = &data.publisher {
-        if !v.is_empty() {
-            lines.push(format!("- **Publisher:** {}", v));
-        }
+    if let Some(v) = &data.publisher
+        && !v.is_empty()
+    {
+        lines.push(format!("- **Publisher:** {}", v));
     }
-    if let Some(v) = &data.doi {
-        if !v.is_empty() {
-            lines.push(format!("- **DOI:** {}", v));
-        }
+    if let Some(v) = &data.doi
+        && !v.is_empty()
+    {
+        lines.push(format!("- **DOI:** {}", v));
     }
-    if let Some(v) = &data.url {
-        if !v.is_empty() {
-            lines.push(format!("- **URL:** {}", v));
-        }
+    if let Some(v) = &data.url
+        && !v.is_empty()
+    {
+        lines.push(format!("- **URL:** {}", v));
     }
-    if let Some(tags) = &data.tags {
-        if !tags.is_empty() {
-            let tag_str: String = tags
-                .iter()
-                .map(|t| t.tag.as_str())
-                .collect::<Vec<_>>()
-                .join(", ");
-            lines.push(format!("- **Tags:** {}", tag_str));
-        }
+    if let Some(tags) = &data.tags
+        && !tags.is_empty()
+    {
+        let tag_str: String = tags
+            .iter()
+            .map(|t| t.tag.as_str())
+            .collect::<Vec<_>>()
+            .join(", ");
+        lines.push(format!("- **Tags:** {}", tag_str));
     }
-    if let Some(cols) = &data.collections {
-        if !cols.is_empty() {
-            lines.push(format!("- **Collections:** {}", cols.join(", ")));
-        }
+    if let Some(cols) = &data.collections
+        && !cols.is_empty()
+    {
+        lines.push(format!("- **Collections:** {}", cols.join(", ")));
     }
-    if let Some(v) = &data.extra {
-        if !v.is_empty() {
-            lines.push(format!("- **Extra:** {}", v));
-        }
+    if let Some(v) = &data.extra
+        && !v.is_empty()
+    {
+        lines.push(format!("- **Extra:** {}", v));
     }
 
-    if include_abstract {
-        if let Some(abstract_note) = &data.abstract_note {
-            if !abstract_note.is_empty() {
-                lines.push(String::new());
-                lines.push("## Abstract".to_string());
-                lines.push(String::new());
-                lines.push(clean_html(abstract_note, false));
-            }
-        }
+    if include_abstract
+        && let Some(abstract_note) = &data.abstract_note
+        && !abstract_note.is_empty()
+    {
+        lines.push(String::new());
+        lines.push("## Abstract".to_string());
+        lines.push(String::new());
+        lines.push(clean_html(abstract_note, false));
     }
 
     lines.join("\n")
@@ -287,10 +285,10 @@ pub fn generate_bibtex(item: &ZoteroItem) -> String {
 
     let mut lines = vec![format!("@{}{{{},", entry_type, cite_key)];
     for (field, value) in fields {
-        if let Some(v) = value {
-            if !v.is_empty() {
-                lines.push(format!("  {} = {{{}}},", field, escape_bibtex(&v)));
-            }
+        if let Some(v) = value
+            && !v.is_empty()
+        {
+            lines.push(format!("  {} = {{{}}},", field, escape_bibtex(&v)));
         }
     }
     lines.push("}".to_string());

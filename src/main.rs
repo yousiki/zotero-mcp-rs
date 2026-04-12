@@ -1,11 +1,11 @@
 use anyhow::Result;
 use clap::Parser;
-use rmcp::{transport::stdio, ServiceExt};
+use rmcp::{ServiceExt, transport::stdio};
 
-use crate::server::ZoteroServer;
-use crate::clients::zotero::ZoteroClient;
 use crate::clients::webdav::create_webdav_client;
+use crate::clients::zotero::ZoteroClient;
 use crate::config::{Config, TransportMode};
+use crate::server::ZoteroServer;
 
 mod clients;
 mod config;
@@ -41,12 +41,15 @@ async fn main() -> Result<()> {
     } else {
         // Call /keys/current to get user ID
         let client = reqwest::Client::new();
-        let resp = client.get("https://api.zotero.org/keys/current")
+        let resp = client
+            .get("https://api.zotero.org/keys/current")
             .header("Zotero-API-Key", &config.zotero_api_key)
             .header("Zotero-API-Version", "3")
-            .send().await?;
+            .send()
+            .await?;
         let data: serde_json::Value = resp.json().await?;
-        let user_id = data.get("userID")
+        let user_id = data
+            .get("userID")
             .and_then(|v| v.as_i64())
             .ok_or_else(|| anyhow::anyhow!("Failed to auto-detect library ID from API key"))?;
         eprintln!("Auto-detected library: user/{}", user_id);
@@ -73,7 +76,10 @@ async fn main() -> Result<()> {
 
     match transport {
         TransportMode::Stdio => {
-            eprintln!("Zotero MCP server started (library: {}/{}, transport: stdio)", library_type, library_id);
+            eprintln!(
+                "Zotero MCP server started (library: {}/{}, transport: stdio)",
+                library_type, library_id
+            );
             let server = ZoteroServer::new(zotero_client, webdav);
             server.serve(stdio()).await?.waiting().await?;
         }
@@ -81,22 +87,20 @@ async fn main() -> Result<()> {
             eprintln!("Zotero MCP server listening on http://0.0.0.0:{}", port);
             // HTTP transport using rmcp's StreamableHttpService
             use rmcp::transport::streamable_http_server::{
-                StreamableHttpService, StreamableHttpServerConfig,
+                StreamableHttpServerConfig, StreamableHttpService,
                 session::local::LocalSessionManager,
             };
-            
+
             let service = StreamableHttpService::new(
                 {
                     let zotero_client = zotero_client.clone();
                     let webdav = webdav.clone();
-                    move || {
-                        Ok(ZoteroServer::new(zotero_client.clone(), webdav.clone()))
-                    }
+                    move || Ok(ZoteroServer::new(zotero_client.clone(), webdav.clone()))
                 },
                 std::sync::Arc::new(LocalSessionManager::default()),
                 StreamableHttpServerConfig::default(),
             );
-            
+
             let router = axum::Router::new().nest_service("/mcp", service);
             let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
             axum::serve(listener, router).await?;

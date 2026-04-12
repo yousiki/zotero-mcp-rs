@@ -1,6 +1,6 @@
+use rmcp::schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use rmcp::schemars::{self, JsonSchema};
 
 use crate::shared::types::ZoteroCreator;
 
@@ -21,16 +21,16 @@ impl StringOrList {
                     vec![]
                 } else {
                     let trimmed = s.trim();
-                    if trimmed.starts_with('[') && trimmed.ends_with(']') {
-                        if let Ok(parsed) = serde_json::from_str::<Vec<String>>(trimmed) {
-                            return parsed
-                                .into_iter()
-                                .map(|v| v.trim().to_string())
-                                .filter(|v| !v.is_empty())
-                                .collect();
-                        }
+                    if trimmed.starts_with('[')
+                        && trimmed.ends_with(']')
+                        && let Ok(parsed) = serde_json::from_str::<Vec<String>>(trimmed)
+                    {
+                        return parsed
+                            .into_iter()
+                            .map(|v| v.trim().to_string())
+                            .filter(|v| !v.is_empty())
+                            .collect();
                     }
-
                     s.split(',')
                         .map(|v| v.trim().to_string())
                         .filter(|v| !v.is_empty())
@@ -160,27 +160,27 @@ pub fn handle_write_response(response: &Value) -> WriteStatus {
                 ok: false,
                 message: "Empty write response".to_string(),
                 data: None,
-            }
+            };
         }
     };
 
-    if let Some(failed) = obj.get("failed").and_then(|v| v.as_object()) {
-        if !failed.is_empty() {
-            let reason: Vec<String> = failed
-                .iter()
-                .filter_map(|(idx, err)| {
-                    err.get("message")
-                        .and_then(|m| m.as_str())
-                        .map(|msg| format!("{}: {}", idx, msg))
-                })
-                .collect();
+    if let Some(failed) = obj.get("failed").and_then(|v| v.as_object())
+        && !failed.is_empty()
+    {
+        let reason: Vec<String> = failed
+            .iter()
+            .filter_map(|(idx, err)| {
+                err.get("message")
+                    .and_then(|m| m.as_str())
+                    .map(|msg| format!("{}: {}", idx, msg))
+            })
+            .collect();
 
-            return WriteStatus {
-                ok: false,
-                message: format!("Write failed - {}", reason.join("; ")),
-                data: Some(response.clone()),
-            };
-        }
+        return WriteStatus {
+            ok: false,
+            message: format!("Write failed - {}", reason.join("; ")),
+            data: Some(response.clone()),
+        };
     }
 
     let success_count = [

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use serde_json::Value;
 
 use crate::clients::webdav::WebDavClient;
@@ -102,8 +102,7 @@ pub async fn download_and_attach_pdf(
     if !status.ok {
         return Err(anyhow!("Failed to create attachment: {}", status.message));
     }
-    let attachment_key =
-        extract_attachment_key(status.data.as_ref().unwrap_or(&Value::Null))?;
+    let attachment_key = extract_attachment_key(status.data.as_ref().unwrap_or(&Value::Null))?;
 
     // 5. Upload to WebDAV
     let upload_result = webdav
@@ -154,8 +153,7 @@ pub async fn attach_linked_url(
         return Ok(None);
     }
 
-    let key =
-        extract_attachment_key(status.data.as_ref().unwrap_or(&Value::Null)).ok();
+    let key = extract_attachment_key(status.data.as_ref().unwrap_or(&Value::Null)).ok();
     Ok(key)
 }
 
@@ -240,9 +238,11 @@ mod tests {
         let data = json!({"failed": {"0": {"code": 400, "message": "Bad request"}}});
         let result = extract_attachment_key(&data);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("No attachment key"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("No attachment key")
+        );
     }
 }

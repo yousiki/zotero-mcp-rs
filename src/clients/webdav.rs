@@ -1,5 +1,5 @@
-use anyhow::{anyhow, Result};
-use base64::{engine::general_purpose, Engine};
+use anyhow::{Result, anyhow};
+use base64::{Engine, engine::general_purpose};
 use md5::{Digest, Md5};
 use reqwest::Client;
 use std::io::Write;
@@ -25,10 +25,7 @@ impl WebDavClient {
     fn with_client(url: &str, username: &str, password: &str, http: Client) -> Self {
         let base_url = url.trim_end_matches('/').to_string();
         let credentials = format!("{}:{}", username, password);
-        let auth_header = format!(
-            "Basic {}",
-            general_purpose::STANDARD.encode(credentials)
-        );
+        let auth_header = format!("Basic {}", general_purpose::STANDARD.encode(credentials));
         Self {
             base_url,
             auth_header,
@@ -65,11 +62,7 @@ impl WebDavClient {
             && resp.status().as_u16() != 201
             && resp.status().as_u16() != 204
         {
-            return Err(anyhow!(
-                "WebDAV PUT {}.zip failed ({})",
-                key,
-                resp.status()
-            ));
+            return Err(anyhow!("WebDAV PUT {}.zip failed ({})", key, resp.status()));
         }
 
         // PUT {key}.prop with XML metadata

@@ -119,10 +119,10 @@ pub fn extract_values(item: &ZoteroItem, field: &str) -> Vec<String> {
                 creators
                     .iter()
                     .filter_map(|c| {
-                        if let Some(name) = &c.name {
-                            if !name.is_empty() {
-                                return Some(name.clone());
-                            }
+                        if let Some(name) = &c.name
+                            && !name.is_empty()
+                        {
+                            return Some(name.clone());
                         }
                         let parts: Vec<&str> = [c.first_name.as_deref(), c.last_name.as_deref()]
                             .into_iter()
@@ -195,10 +195,10 @@ pub fn extract_values(item: &ZoteroItem, field: &str) -> Vec<String> {
             // Fallback: try extra_fields with original name, then canonical
             for try_key in [field, key.as_str()] {
                 if let Some(v) = data.extra_fields.get(try_key) {
-                    if let Some(s) = v.as_str() {
-                        if !s.trim().is_empty() {
-                            return vec![s.to_string()];
-                        }
+                    if let Some(s) = v.as_str()
+                        && !s.trim().is_empty()
+                    {
+                        return vec![s.to_string()];
                     }
                     if let Some(n) = v.as_f64() {
                         return vec![n.to_string()];
@@ -284,12 +284,10 @@ fn extract_year(s: &str) -> Option<i64> {
             && bytes[i + 1].is_ascii_digit()
             && bytes[i + 2].is_ascii_digit()
             && bytes[i + 3].is_ascii_digit()
+            && let Ok(y) = s[i..i + 4].parse::<i64>()
+            && (1900..=2099).contains(&y)
         {
-            if let Ok(y) = s[i..i + 4].parse::<i64>() {
-                if (1900..=2099).contains(&y) {
-                    return Some(y);
-                }
-            }
+            return Some(y);
         }
     }
     None

@@ -19,8 +19,18 @@ fn encode_uri_component(s: &str) -> String {
     let mut result = String::with_capacity(s.len() * 2);
     for byte in s.bytes() {
         match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9'
-            | b'-' | b'_' | b'.' | b'!' | b'~' | b'*' | b'\'' | b'(' | b')' => {
+            b'A'..=b'Z'
+            | b'a'..=b'z'
+            | b'0'..=b'9'
+            | b'-'
+            | b'_'
+            | b'.'
+            | b'!'
+            | b'~'
+            | b'*'
+            | b'\''
+            | b'('
+            | b')' => {
                 result.push(byte as char);
             }
             _ => {
@@ -59,21 +69,20 @@ pub async fn try_unpaywall(doi: &str) -> Option<String> {
     let data: UnpaywallResponse = resp.json().await.ok()?;
 
     // Try best OA location first
-    if let Some(best) = &data.best_oa_location {
-        if let Some(pdf_url) = &best.url_for_pdf {
-            if !pdf_url.is_empty() {
-                return Some(pdf_url.clone());
-            }
-        }
+    if let Some(best) = &data.best_oa_location
+        && let Some(pdf_url) = &best.url_for_pdf
+        && !pdf_url.is_empty()
+    {
+        return Some(pdf_url.clone());
     }
 
     // Fall back to any oa_locations entry with a PDF URL
     if let Some(locations) = &data.oa_locations {
         for loc in locations {
-            if let Some(pdf_url) = &loc.url_for_pdf {
-                if !pdf_url.is_empty() {
-                    return Some(pdf_url.clone());
-                }
+            if let Some(pdf_url) = &loc.url_for_pdf
+                && !pdf_url.is_empty()
+            {
+                return Some(pdf_url.clone());
             }
         }
     }
@@ -161,10 +170,10 @@ pub fn try_arxiv_from_crossref(metadata: &Value) -> Option<String> {
 
     for candidate in alternates {
         let id = candidate.get("id")?.as_str()?;
-        if id.to_lowercase().contains("arxiv") {
-            if let Some(m) = arxiv_id_regex().find(id) {
-                return Some(m.as_str().to_string());
-            }
+        if id.to_lowercase().contains("arxiv")
+            && let Some(m) = arxiv_id_regex().find(id)
+        {
+            return Some(m.as_str().to_string());
         }
     }
 
@@ -189,33 +198,33 @@ pub async fn try_attach_oa_pdf(
 ) -> Option<String> {
     // Build list of PDF URL futures
     let unpaywall = try_unpaywall(doi).await;
-    if let Some(pdf_url) = &unpaywall {
-        if try_download(client, item_key, pdf_url, doi, webdav).await {
-            return Some(pdf_url.clone());
-        }
+    if let Some(pdf_url) = &unpaywall
+        && try_download(client, item_key, pdf_url, doi, webdav).await
+    {
+        return Some(pdf_url.clone());
     }
 
     let s2 = try_semantic_scholar(doi).await;
-    if let Some(pdf_url) = &s2 {
-        if try_download(client, item_key, pdf_url, doi, webdav).await {
-            return Some(pdf_url.clone());
-        }
+    if let Some(pdf_url) = &s2
+        && try_download(client, item_key, pdf_url, doi, webdav).await
+    {
+        return Some(pdf_url.clone());
     }
 
     let pmc = try_pmc(doi).await;
-    if let Some(pdf_url) = &pmc {
-        if try_download(client, item_key, pdf_url, doi, webdav).await {
-            return Some(pdf_url.clone());
-        }
+    if let Some(pdf_url) = &pmc
+        && try_download(client, item_key, pdf_url, doi, webdav).await
+    {
+        return Some(pdf_url.clone());
     }
 
     // Try arXiv from crossref relations
-    if let Some(meta) = crossref_meta {
-        if let Some(arxiv_id) = try_arxiv_from_crossref(meta) {
-            let pdf_url = format!("https://arxiv.org/pdf/{}.pdf", arxiv_id);
-            if try_download(client, item_key, &pdf_url, doi, webdav).await {
-                return Some(pdf_url);
-            }
+    if let Some(meta) = crossref_meta
+        && let Some(arxiv_id) = try_arxiv_from_crossref(meta)
+    {
+        let pdf_url = format!("https://arxiv.org/pdf/{}.pdf", arxiv_id);
+        if try_download(client, item_key, &pdf_url, doi, webdav).await {
+            return Some(pdf_url);
         }
     }
 

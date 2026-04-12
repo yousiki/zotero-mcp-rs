@@ -1,13 +1,11 @@
 use std::env;
 
-#[derive(Debug, Clone, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum TransportMode {
     #[default]
     Stdio,
     Http,
 }
-
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -103,7 +101,7 @@ mod tests {
             "PORT",
             "MCP_TRANSPORT",
         ] {
-            env::remove_var(key);
+            unsafe { env::remove_var(key) };
         }
     }
 
@@ -120,7 +118,7 @@ mod tests {
     fn test_defaults() {
         let _guard = env_guard();
         clear_env();
-        env::set_var("ZOTERO_API_KEY", "test_key_123");
+        unsafe { env::set_var("ZOTERO_API_KEY", "test_key_123") };
         let config = Config::from_env().unwrap();
         assert_eq!(config.zotero_api_key, "test_key_123");
         assert_eq!(config.zotero_library_id, None);
@@ -135,8 +133,8 @@ mod tests {
     fn test_library_type_group() {
         let _guard = env_guard();
         clear_env();
-        env::set_var("ZOTERO_API_KEY", "key");
-        env::set_var("ZOTERO_LIBRARY_TYPE", "group");
+        unsafe { env::set_var("ZOTERO_API_KEY", "key") };
+        unsafe { env::set_var("ZOTERO_LIBRARY_TYPE", "group") };
         let config = Config::from_env().unwrap();
         assert_eq!(config.zotero_library_type, "group");
         clear_env();
@@ -146,8 +144,8 @@ mod tests {
     fn test_library_type_defaults_to_user() {
         let _guard = env_guard();
         clear_env();
-        env::set_var("ZOTERO_API_KEY", "key");
-        env::set_var("ZOTERO_LIBRARY_TYPE", "GROUP"); // uppercase normalized
+        unsafe { env::set_var("ZOTERO_API_KEY", "key") };
+        unsafe { env::set_var("ZOTERO_LIBRARY_TYPE", "GROUP") }; // uppercase normalized
         let config = Config::from_env().unwrap();
         assert_eq!(config.zotero_library_type, "group");
         clear_env();
@@ -157,9 +155,9 @@ mod tests {
     fn test_port_and_transport() {
         let _guard = env_guard();
         clear_env();
-        env::set_var("ZOTERO_API_KEY", "key");
-        env::set_var("PORT", "8080");
-        env::set_var("MCP_TRANSPORT", "http");
+        unsafe { env::set_var("ZOTERO_API_KEY", "key") };
+        unsafe { env::set_var("PORT", "8080") };
+        unsafe { env::set_var("MCP_TRANSPORT", "http") };
         let config = Config::from_env().unwrap();
         assert_eq!(config.port, 8080);
         assert_eq!(config.transport, TransportMode::Http);
@@ -170,10 +168,10 @@ mod tests {
     fn test_webdav_configured() {
         let _guard = env_guard();
         clear_env();
-        env::set_var("ZOTERO_API_KEY", "key");
-        env::set_var("WEBDAV_URL", "https://dav.example.com");
-        env::set_var("WEBDAV_USERNAME", "user");
-        env::set_var("WEBDAV_PASSWORD", "pass");
+        unsafe { env::set_var("ZOTERO_API_KEY", "key") };
+        unsafe { env::set_var("WEBDAV_URL", "https://dav.example.com") };
+        unsafe { env::set_var("WEBDAV_USERNAME", "user") };
+        unsafe { env::set_var("WEBDAV_PASSWORD", "pass") };
         let config = Config::from_env().unwrap();
         assert!(config.webdav_configured());
         assert_eq!(
