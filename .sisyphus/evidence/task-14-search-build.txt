@@ -1,0 +1,353 @@
+   Compiling zotero-mcp-rs v0.1.0 (/Users/yousiki/Documents/zotero-mcp-rs)
+warning: associated items `new`, `with_client`, `file_exists`, `delete_file`, and `verify` are never used
+   --> src/clients/webdav.rs:20:12
+    |
+ 19 | impl WebDavClient {
+    | ----------------- associated items in this implementation
+ 20 |     pub fn new(url: &str, username: &str, password: &str) -> Self {
+    |            ^^^
+...
+ 24 |     fn with_client(url: &str, username: &str, password: &str, http: Client) -> Self {
+    |        ^^^^^^^^^^^
+...
+103 |     pub async fn file_exists(&self, key: &str) -> Result<bool> {
+    |                  ^^^^^^^^^^^
+...
+115 |     pub async fn delete_file(&self, key: &str) -> Result<()> {
+    |                  ^^^^^^^^^^^
+...
+134 |     pub async fn verify(&self) -> bool {
+    |                  ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `create_webdav_client` is never used
+   --> src/clients/webdav.rs:169:8
+    |
+169 | pub fn create_webdav_client(
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `TransportMode` is never used
+ --> src/config.rs:4:10
+  |
+4 | pub enum TransportMode {
+  |          ^^^^^^^^^^^^^
+
+warning: struct `Config` is never constructed
+  --> src/config.rs:16:12
+   |
+16 | pub struct Config {
+   |            ^^^^^^
+
+warning: associated items `from_env` and `webdav_configured` are never used
+  --> src/config.rs:30:12
+   |
+27 | impl Config {
+   | ----------- associated items in this implementation
+...
+30 |     pub fn from_env() -> Result<Self, String> {
+   |            ^^^^^^^^
+...
+79 |     pub fn webdav_configured(&self) -> bool {
+   |            ^^^^^^^^^^^^^^^^^
+
+warning: enum `InputType` is never used
+ --> src/services/identifiers.rs:8:10
+  |
+8 | pub enum InputType {
+  |          ^^^^^^^^^
+
+warning: function `normalize_doi` is never used
+  --> src/services/identifiers.rs:18:8
+   |
+18 | pub fn normalize_doi(raw: &str) -> Result<String> {
+   |        ^^^^^^^^^^^^^
+
+warning: function `normalize_arxiv_id` is never used
+  --> src/services/identifiers.rs:29:8
+   |
+29 | pub fn normalize_arxiv_id(raw: &str) -> Result<String> {
+   |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `detect_input_type` is never used
+  --> src/services/identifiers.rs:39:8
+   |
+39 | pub fn detect_input_type(input: &str) -> InputType {
+   |        ^^^^^^^^^^^^^^^^^
+
+warning: function `percent_decode` is never used
+  --> src/services/identifiers.rs:78:4
+   |
+78 | fn percent_decode(input: &str) -> String {
+   |    ^^^^^^^^^^^^^^
+
+warning: function `hex_val` is never used
+  --> src/services/identifiers.rs:99:4
+   |
+99 | fn hex_val(byte: u8) -> Option<u8> {
+   |    ^^^^^^^
+
+warning: function `find_existing_by_doi` is never used
+   --> src/services/identifiers.rs:109:14
+    |
+109 | pub async fn find_existing_by_doi(_doi: &str) -> Option<ZoteroItem> {
+    |              ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `find_existing_by_arxiv_id` is never used
+   --> src/services/identifiers.rs:114:14
+    |
+114 | pub async fn find_existing_by_arxiv_id(_arxiv_id: &str) -> Option<ZoteroItem> {
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `TagClause` is never constructed
+ --> src/services/search_engine.rs:8:12
+  |
+8 | pub struct TagClause {
+  |            ^^^^^^^^^
+
+warning: function `parse_tag_clause` is never used
+  --> src/services/search_engine.rs:15:8
+   |
+15 | pub fn parse_tag_clause(raw_clause: &str) -> TagClause {
+   |        ^^^^^^^^^^^^^^^^
+
+warning: function `matches_tag_clauses` is never used
+  --> src/services/search_engine.rs:50:8
+   |
+50 | pub fn matches_tag_clauses(item: &ZoteroItem, clauses: &[TagClause]) -> bool {
+   |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `read_citation_key_from_extra` is never used
+  --> src/services/search_engine.rs:69:8
+   |
+69 | pub fn read_citation_key_from_extra(extra: &str) -> Option<String> {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `canonical_field` is never used
+  --> src/services/search_engine.rs:92:4
+   |
+92 | fn canonical_field(field: &str) -> String {
+   |    ^^^^^^^^^^^^^^^
+
+warning: function `opt_to_vec` is never used
+   --> src/services/search_engine.rs:102:4
+    |
+102 | fn opt_to_vec(opt: &Option<String>) -> Vec<String> {
+    |    ^^^^^^^^^^
+
+warning: function `extract_values` is never used
+   --> src/services/search_engine.rs:110:8
+    |
+110 | pub fn extract_values(item: &ZoteroItem, field: &str) -> Vec<String> {
+    |        ^^^^^^^^^^^^^^
+
+warning: function `parse_date_ms` is never used
+   --> src/services/search_engine.rs:218:4
+    |
+218 | fn parse_date_ms(s: &str) -> Option<i64> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `date_to_epoch_ms` is never used
+   --> src/services/search_engine.rs:264:4
+    |
+264 | fn date_to_epoch_ms(year: i32, month: u32, day: u32) -> i64 {
+    |    ^^^^^^^^^^^^^^^^
+
+warning: function `extract_year` is never used
+   --> src/services/search_engine.rs:277:4
+    |
+277 | fn extract_year(s: &str) -> Option<i64> {
+    |    ^^^^^^^^^^^^
+
+warning: function `evaluate_condition` is never used
+   --> src/services/search_engine.rs:304:8
+    |
+304 | pub fn evaluate_condition(item: &ZoteroItem, condition: &SearchCondition) -> bool {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: enum `ComparableValue` is never used
+   --> src/services/search_engine.rs:383:10
+    |
+383 | pub enum ComparableValue {
+    |          ^^^^^^^^^^^^^^^
+
+warning: function `first_comparable_value` is never used
+   --> src/services/search_engine.rs:390:8
+    |
+390 | pub fn first_comparable_value(item: &ZoteroItem, field: &str) -> ComparableValue {
+    |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `compare_comparable` is never used
+   --> src/services/search_engine.rs:407:8
+    |
+407 | pub fn compare_comparable(a: &ComparableValue, b: &ComparableValue) -> Ordering {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `year_regex` is never used
+  --> src/shared/formatters.rs:26:4
+   |
+26 | fn year_regex() -> &'static Regex {
+   |    ^^^^^^^^^^
+
+warning: function `escape_html` is never used
+  --> src/shared/formatters.rs:48:8
+   |
+48 | pub fn escape_html(text: &str) -> String {
+   |        ^^^^^^^^^^^
+
+warning: function `format_item_metadata` is never used
+   --> src/shared/formatters.rs:177:8
+    |
+177 | pub fn format_item_metadata(item: &ZoteroItem, include_abstract: bool) -> String {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `generate_bibtex` is never used
+   --> src/shared/formatters.rs:267:8
+    |
+267 | pub fn generate_bibtex(item: &ZoteroItem) -> String {
+    |        ^^^^^^^^^^^^^^^
+
+warning: function `find_best_attachment` is never used
+   --> src/shared/formatters.rs:301:8
+    |
+301 | pub fn find_best_attachment(children: &[ZoteroItem]) -> Option<AttachmentDetails> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `map_item_type_to_bibtex` is never used
+   --> src/shared/formatters.rs:357:4
+    |
+357 | fn map_item_type_to_bibtex(item_type: &str) -> &'static str {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `format_creators_for_bibtex` is never used
+   --> src/shared/formatters.rs:371:4
+    |
+371 | fn format_creators_for_bibtex(creators: &[ZoteroCreator]) -> Option<String> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `extract_year` is never used
+   --> src/shared/formatters.rs:402:4
+    |
+402 | fn extract_year(date: Option<&str>) -> Option<String> {
+    |    ^^^^^^^^^^^^
+
+warning: function `build_fallback_cite_key` is never used
+   --> src/shared/formatters.rs:406:4
+    |
+406 | fn build_fallback_cite_key(item: &ZoteroItem) -> String {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `escape_bibtex` is never used
+   --> src/shared/formatters.rs:431:4
+    |
+431 | fn escape_bibtex(value: &str) -> String {
+    |    ^^^^^^^^^^^^^
+
+warning: method `parent_collection_key` is never used
+   --> src/shared/types.rs:147:12
+    |
+146 | impl ZoteroCollectionData {
+    | ------------------------- method in this implementation
+147 |     pub fn parent_collection_key(&self) -> Option<&str> {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `AttachmentDetails` is never constructed
+   --> src/shared/types.rs:167:12
+    |
+167 | pub struct AttachmentDetails {
+    |            ^^^^^^^^^^^^^^^^^
+
+warning: struct `SearchCondition` is never constructed
+   --> src/shared/types.rs:193:12
+    |
+193 | pub struct SearchCondition {
+    |            ^^^^^^^^^^^^^^^
+
+warning: struct `LibraryInfo` is never constructed
+   --> src/shared/types.rs:212:12
+    |
+212 | pub struct LibraryInfo {
+    |            ^^^^^^^^^^^
+
+warning: struct `FeedItem` is never constructed
+   --> src/shared/types.rs:239:12
+    |
+239 | pub struct FeedItem {
+    |            ^^^^^^^^
+
+warning: enum `StringOrList` is never used
+  --> src/shared/validators.rs:11:10
+   |
+11 | pub enum StringOrList {
+   |          ^^^^^^^^^^^^
+
+warning: method `into_vec` is never used
+  --> src/shared/validators.rs:17:12
+   |
+16 | impl StringOrList {
+   | ----------------- method in this implementation
+17 |     pub fn into_vec(self) -> Vec<String> {
+   |            ^^^^^^^^
+
+warning: function `parse_str_list` is never used
+  --> src/shared/validators.rs:51:8
+   |
+51 | pub fn parse_str_list(value: Option<StringOrList>) -> Vec<String> {
+   |        ^^^^^^^^^^^^^^
+
+warning: function `normalize_limit` is never used
+  --> src/shared/validators.rs:59:8
+   |
+59 | pub fn normalize_limit(value: Option<i64>, default_val: i64, max_val: i64) -> i64 {
+   |        ^^^^^^^^^^^^^^^
+
+warning: function `is_collection_key` is never used
+  --> src/shared/validators.rs:68:8
+   |
+68 | pub fn is_collection_key(value: &str) -> bool {
+   |        ^^^^^^^^^^^^^^^^^
+
+warning: function `dedupe_strings` is never used
+  --> src/shared/validators.rs:77:8
+   |
+77 | pub fn dedupe_strings(values: Vec<String>) -> Vec<String> {
+   |        ^^^^^^^^^^^^^^
+
+warning: struct `SearchArgs` is never constructed
+  --> src/tools/search.rs:17:12
+   |
+17 | pub struct SearchArgs {
+   |            ^^^^^^^^^^
+
+warning: function `default_join_mode` is never used
+  --> src/tools/search.rs:39:4
+   |
+39 | fn default_join_mode() -> String {
+   |    ^^^^^^^^^^^^^^^^^
+
+warning: function `default_sort_dir` is never used
+  --> src/tools/search.rs:42:4
+   |
+42 | fn default_sort_dir() -> String {
+   |    ^^^^^^^^^^^^^^^^
+
+warning: function `default_limit` is never used
+  --> src/tools/search.rs:45:4
+   |
+45 | fn default_limit() -> i64 {
+   |    ^^^^^^^^^^^^^
+
+warning: function `handle_zotero_search` is never used
+  --> src/tools/search.rs:50:14
+   |
+50 | pub async fn handle_zotero_search(client: &ZoteroClient, args: SearchArgs) -> String {
+   |              ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `handle_zotero_search_inner` is never used
+  --> src/tools/search.rs:57:10
+   |
+57 | async fn handle_zotero_search_inner(
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `zotero-mcp-rs` (bin "zotero-mcp-rs") generated 54 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.53s

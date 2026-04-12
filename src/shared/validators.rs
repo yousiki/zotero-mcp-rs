@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use rmcp::schemars::{self, JsonSchema};
 
 use crate::shared::types::ZoteroCreator;
 
 /// Represents inputs that can be either a single string or array of strings.
 /// Used for tool parameters that accept `string | string[]` in TypeScript.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 pub enum StringOrList {
     Single(String),
