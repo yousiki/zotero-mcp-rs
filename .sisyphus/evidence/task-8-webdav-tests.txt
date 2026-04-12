@@ -1,0 +1,13 @@
+
+running 8 tests
+test clients::webdav::tests::test_create_webdav_client_none_on_missing ... ok
+test clients::webdav::tests::test_verify_success ... ok
+test clients::webdav::tests::test_file_not_exists ... ok
+test clients::webdav::tests::test_file_exists_head_request ... ok
+test clients::webdav::tests::test_delete_file ... ok
+test clients::webdav::tests::test_upload_creates_zip_and_prop ... ok
+test clients::webdav::tests::test_auth_header_present ... ok
+test clients::webdav::tests::test_create_webdav_client_some ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 86 filtered out; finished in 0.01s
+
