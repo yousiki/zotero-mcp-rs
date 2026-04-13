@@ -68,7 +68,7 @@ impl ZoteroServer {
 
     #[tool(description = "Delete one or more Zotero items by key.")]
     async fn zotero_delete_item(&self, Parameters(args): Parameters<ItemDeleteArgs>) -> String {
-        handle_zotero_delete_item(&self.client, args).await
+        handle_zotero_delete_item(&self.client, &self.webdav, args).await
     }
 
     // === Annotations & Notes (3 tools) ===

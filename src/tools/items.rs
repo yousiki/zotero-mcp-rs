@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use rmcp::schemars::{self, JsonSchema};
 use serde::Deserialize;
 
+use crate::clients::webdav::WebDavClient;
 use crate::clients::zotero::ZoteroClient;
 use crate::services::identifiers::{normalize_doi, resolve_collection_names};
 use crate::shared::formatters::{
@@ -503,8 +504,12 @@ async fn handle_zotero_update_item_inner(
 }
 
 /// Handle the zotero_delete_item tool.
-pub async fn handle_zotero_delete_item(client: &ZoteroClient, args: ItemDeleteArgs) -> String {
-    match handle_zotero_delete_item_inner(client, args).await {
+pub async fn handle_zotero_delete_item(
+    client: &ZoteroClient,
+    webdav: &Option<WebDavClient>,
+    args: ItemDeleteArgs,
+) -> String {
+    match handle_zotero_delete_item_inner(client, webdav, args).await {
         Ok(s) => s,
         Err(e) => format!("Error: {}", e),
     }
@@ -512,6 +517,7 @@ pub async fn handle_zotero_delete_item(client: &ZoteroClient, args: ItemDeleteAr
 
 async fn handle_zotero_delete_item_inner(
     client: &ZoteroClient,
+    webdav: &Option<WebDavClient>,
     args: ItemDeleteArgs,
 ) -> anyhow::Result<String> {
     let item_keys = dedupe_strings(args.item_keys.into_vec());
@@ -521,21 +527,49 @@ async fn handle_zotero_delete_item_inner(
 
     let mut deleted = 0usize;
     let mut failed = 0usize;
+    let mut webdav_deleted = 0usize;
 
     for key in &item_keys {
+        // First, get the item to retrieve its version and children
         match client.get_item(key).await {
-            Ok(item) => match client.delete_item(key, item.version).await {
-                Ok(true) => deleted += 1,
-                _ => failed += 1,
-            },
+            Ok(item) => {
+                // If WebDAV is configured, delete attachment files first
+                if let Some(webdav_client) = webdav {
+                    // Get children (attachments and notes)
+                    match client.get_item_children(key).await {
+                        Ok(children) => {
+                            for child in &children {
+                                // Delete WebDAV files for attachments
+                                if child.data.item_type == "attachment" {
+                                    if let Err(e) = webdav_client.delete_file(&child.key).await {
+                                        // Log but don't fail the whole operation
+                                        tracing::warn!("Failed to delete WebDAV file for {}: {}", child.key, e);
+                                    } else {
+                                        webdav_deleted += 1;
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            // Log but continue with item deletion
+                            tracing::warn!("Failed to get children for {}: {}", key, e);
+                        }
+                    }
+                }
+
+                // Then delete the item from Zotero
+                match client.delete_item(key, item.version).await {
+                    Ok(true) => deleted += 1,
+                    _ => failed += 1,
+                }
+            }
             Err(_) => failed += 1,
         }
     }
 
-    Ok(format!(
-        "Requested: {}\nDeleted: {}\nFailed: {}",
-        item_keys.len(),
-        deleted,
-        failed
-    ))
+    let mut result = format!("Requested: {}\nDeleted: {}\nFailed: {}", item_keys.len(), deleted, failed);
+    if webdav_deleted > 0 {
+        result.push_str(&format!("\nWebDAV files deleted: {}", webdav_deleted));
+    }
+    Ok(result)
 }
