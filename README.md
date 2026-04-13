@@ -28,6 +28,59 @@ cargo build --release
 # Binary will be at target/release/zotero-mcp-rs
 ```
 
+### Docker
+
+#### 1. Quick Start
+
+```bash
+docker run --rm -i -e ZOTERO_API_KEY=your_key ghcr.io/yousiki/zotero-mcp-rs
+```
+
+#### 2. Available Images
+
+- `ghcr.io/yousiki/zotero-mcp-rs:latest` - Latest stable release
+- `ghcr.io/yousiki/zotero-mcp-rs:edge` - Latest development build
+- `ghcr.io/yousiki/zotero-mcp-rs:0.1.0` - Specific version
+
+#### 3. Claude Desktop Docker Config
+
+```json
+{
+  "mcpServers": {
+    "zotero": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "-e", "ZOTERO_API_KEY=your_key", "ghcr.io/yousiki/zotero-mcp-rs"]
+    }
+  }
+}
+```
+
+#### 4. HTTP Mode
+
+```bash
+docker run --rm -p 3000:3000 \
+  -e ZOTERO_API_KEY=your_key \
+  -e MCP_TRANSPORT=http \
+  ghcr.io/yousiki/zotero-mcp-rs
+```
+
+#### 5. With WebDAV
+
+```bash
+docker run --rm -i \
+  -e ZOTERO_API_KEY=your_key \
+  -e WEBDAV_URL=https://your-webdav.com \
+  -e WEBDAV_USERNAME=user \
+  -e WEBDAV_PASSWORD=pass \
+  ghcr.io/yousiki/zotero-mcp-rs
+```
+
+#### Important Notes
+
+- Use `-i` flag for stdio mode (keeps stdin open)
+- Do NOT use `-t` flag (corrupts stdio protocol)
+- All config is via environment variables
+
 ## Configuration
 
 ### Environment Variables
@@ -148,7 +201,7 @@ Then configure your MCP client to connect to `http://localhost:3000/mcp`.
 
 ### Prerequisites
 
-- Rust 1.75+ (edition 2021)
+- Rust 1.85+ (edition 2024)
 - Cargo
 
 ### Building
