@@ -439,19 +439,17 @@ async fn handle_fetch_inner(client: &ZoteroClient, args: FetchArgs) -> anyhow::R
     let input_type = detect_input_type(input);
     let item_key = match input_type {
         InputType::Doi => {
-            // Normalize DOI
             let doi = normalize_doi(input)?;
-
-            // Search for existing item by DOI
-            let mut params = HashMap::new();
-            params.insert("q".to_string(), doi.clone());
-            params.insert("qmode".to_string(), "everything".to_string());
-            params.insert("limit".to_string(), "50".to_string());
-            let items = client.get_items(params).await?;
-
-            // Find exact DOI match
             let normalized_doi = doi.to_lowercase();
-            let matched = items.into_iter().find(|item| {
+
+            // Scan all top-level items and match by DOI field
+            let mut params = HashMap::new();
+            params.insert("itemType".to_string(), "-attachment".to_string());
+            let all_items = client
+                .paginate(|p| client.get_items(p), params, None)
+                .await?;
+
+            let matched = all_items.into_iter().find(|item| {
                 item.data
                     .doi
                     .as_deref()
@@ -470,19 +468,16 @@ async fn handle_fetch_inner(client: &ZoteroClient, args: FetchArgs) -> anyhow::R
             }
         }
         InputType::Arxiv => {
-            // Normalize arXiv ID
             let arxiv_id = crate::services::identifiers::normalize_arxiv_id(input)?;
 
-            // Search for existing item by arXiv ID (in URL or extra field)
+            // Scan all top-level items and match by URL or Extra field
             let mut params = HashMap::new();
-            params.insert("q".to_string(), arxiv_id.clone());
-            params.insert("qmode".to_string(), "everything".to_string());
-            params.insert("limit".to_string(), "50".to_string());
-            let items = client.get_items(params).await?;
+            params.insert("itemType".to_string(), "-attachment".to_string());
+            let all_items = client
+                .paginate(|p| client.get_items(p), params, None)
+                .await?;
 
-            // Find item with matching arXiv ID
-            let matched = items.into_iter().find(|item| {
-                // Check URL field
+            let matched = all_items.into_iter().find(|item| {
                 if item
                     .data
                     .url
@@ -492,7 +487,6 @@ async fn handle_fetch_inner(client: &ZoteroClient, args: FetchArgs) -> anyhow::R
                 {
                     return true;
                 }
-                // Check extra field for arXiv ID
                 if item
                     .data
                     .extra

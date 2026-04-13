@@ -4,7 +4,7 @@ use rmcp::schemars::{self, JsonSchema};
 use serde::Deserialize;
 
 use crate::clients::zotero::ZoteroClient;
-use crate::services::identifiers::normalize_doi;
+use crate::services::identifiers::{normalize_doi, resolve_collection_names};
 use crate::shared::formatters::{
     clean_html, format_item_metadata, format_item_result, generate_bibtex,
 };
@@ -161,7 +161,6 @@ fn format_children_group(items: &[ZoteroItem], kind: &str) -> Vec<String> {
 }
 
 /// Resolve a mix of collection keys and names to keys.
-/// Note: name resolution is a stub (returns empty for names).
 async fn resolve_collection_keys(client: &ZoteroClient, refs: &[String]) -> Vec<String> {
     if refs.is_empty() {
         return vec![];
@@ -179,10 +178,9 @@ async fn resolve_collection_keys(client: &ZoteroClient, refs: &[String]) -> Vec<
             names.push(trimmed.to_string());
         }
     }
-    // Stub: name resolution not yet implemented
     if !names.is_empty() {
-        // TODO: implement resolve_collection_names
-        let _ = client;
+        let resolved = resolve_collection_names(client, &names).await;
+        keys.extend(resolved);
     }
     dedupe_strings(keys)
 }

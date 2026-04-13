@@ -570,7 +570,9 @@ pub async fn add_via_arxiv(
 
     // Set arXiv-specific fields when no real DOI
     if parsed.doi.is_empty() {
-        item_data.publisher = Some("arXiv".to_string());
+        if template.publisher.is_some() || template.extra_fields.contains_key("publisher") {
+            item_data.publisher = Some("arXiv".to_string());
+        }
         if template.extra_fields.contains_key("number") {
             item_data.extra_fields.insert(
                 "number".into(),
