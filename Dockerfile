@@ -16,10 +16,10 @@ COPY src ./src
 # - /usr/local/cargo/registry: downloaded crate sources
 # - /usr/local/cargo/git/db: git dependency checkouts
 # - /app/target: compiled artifacts
-RUN --mount=type=cache,target=/usr/local/cargo/registry \ 
-    --mount=type=cache,target=/usr/local/cargo/git/db \ 
-    --mount=type=cache,target=/app/target \ 
-    cargo build --release --locked && \ 
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git/db \
+    --mount=type=cache,target=/app/target \
+    cargo build --release --locked && \
     cp /app/target/release/zotero-mcp-rs /zotero-mcp-rs
 
 FROM gcr.io/distroless/cc:nonroot
