@@ -355,7 +355,7 @@ mod tests {
             .await;
 
         Mock::given(method("PUT"))
-            .and(path("/ATTACH1.zip"))
+            .and(path("/zotero/ATTACH1.zip"))
             .respond_with({
                 let expected_filename = expected_filename.clone();
                 let expected_bytes = expected_bytes.clone();
@@ -376,7 +376,7 @@ mod tests {
             .await;
 
         Mock::given(method("PUT"))
-            .and(path("/ATTACH1.prop"))
+            .and(path("/zotero/ATTACH1.prop"))
             .respond_with({
                 let expected_md5 = expected_md5.clone();
                 let uploaded_mtime = Arc::clone(&uploaded_mtime);

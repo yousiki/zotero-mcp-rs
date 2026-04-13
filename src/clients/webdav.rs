@@ -23,7 +23,14 @@ impl WebDavClient {
     }
 
     fn with_client(url: &str, username: &str, password: &str, http: Client) -> Self {
-        let base_url = url.trim_end_matches('/').to_string();
+        // Zotero Desktop auto-appends "/zotero" to the configured WebDAV URL.
+        // Mirror that behavior so files end up in the same location Desktop expects.
+        let trimmed = url.trim_end_matches('/');
+        let base_url = if trimmed.ends_with("/zotero") {
+            trimmed.to_string()
+        } else {
+            format!("{}/zotero", trimmed)
+        };
         let credentials = format!("{}:{}", username, password);
         let auth_header = format!("Basic {}", general_purpose::STANDARD.encode(credentials));
         Self {
@@ -197,14 +204,14 @@ mod tests {
         let server = MockServer::start().await;
 
         Mock::given(method("PUT"))
-            .and(path("/ABCD1234.zip"))
+            .and(path("/zotero/ABCD1234.zip"))
             .respond_with(ResponseTemplate::new(201))
             .expect(1)
             .mount(&server)
             .await;
 
         Mock::given(method("PUT"))
-            .and(path("/ABCD1234.prop"))
+            .and(path("/zotero/ABCD1234.prop"))
             .respond_with(ResponseTemplate::new(201))
             .expect(1)
             .mount(&server)
@@ -227,7 +234,7 @@ mod tests {
         let server = MockServer::start().await;
 
         Mock::given(method("HEAD"))
-            .and(path("/KEY12345.zip"))
+            .and(path("/zotero/KEY12345.zip"))
             .respond_with(ResponseTemplate::new(200))
             .expect(1)
             .mount(&server)
@@ -243,7 +250,7 @@ mod tests {
         let server = MockServer::start().await;
 
         Mock::given(method("HEAD"))
-            .and(path("/MISSING1.zip"))
+            .and(path("/zotero/MISSING1.zip"))
             .respond_with(ResponseTemplate::new(404))
             .expect(1)
             .mount(&server)
@@ -263,7 +270,7 @@ mod tests {
         );
 
         Mock::given(method("PUT"))
-            .and(path("/AUTHTEST.zip"))
+            .and(path("/zotero/AUTHTEST.zip"))
             .and(header("Authorization", expected_auth.as_str()))
             .respond_with(ResponseTemplate::new(201))
             .expect(1)
@@ -271,7 +278,7 @@ mod tests {
             .await;
 
         Mock::given(method("PUT"))
-            .and(path("/AUTHTEST.prop"))
+            .and(path("/zotero/AUTHTEST.prop"))
             .respond_with(ResponseTemplate::new(201))
             .expect(1)
             .mount(&server)
@@ -289,14 +296,14 @@ mod tests {
         let server = MockServer::start().await;
 
         Mock::given(method("DELETE"))
-            .and(path("/DEL12345.zip"))
+            .and(path("/zotero/DEL12345.zip"))
             .respond_with(ResponseTemplate::new(204))
             .expect(1)
             .mount(&server)
             .await;
 
         Mock::given(method("DELETE"))
-            .and(path("/DEL12345.prop"))
+            .and(path("/zotero/DEL12345.prop"))
             .respond_with(ResponseTemplate::new(204))
             .expect(1)
             .mount(&server)

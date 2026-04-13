@@ -672,6 +672,16 @@ async fn handle_zotero_add_note_inner(
         "rects": [[0, 0, 100, 100]]
     }))?;
 
+    let tags = args.tags.map(|t| {
+        t.into_iter()
+            .filter(|s| !s.trim().is_empty())
+            .map(|s| crate::shared::types::ZoteroTag {
+                tag: s.trim().to_string(),
+                tag_type: None,
+            })
+            .collect::<Vec<_>>()
+    });
+
     let annotation_data = crate::shared::types::ZoteroItemData {
         item_type: "annotation".to_string(),
         parent_item: Some(attachment_key),
@@ -681,6 +691,7 @@ async fn handle_zotero_add_note_inner(
         annotation_color: Some(args.color),
         annotation_page_label: Some(page.to_string()),
         annotation_position: Some(annotation_position),
+        tags,
         ..Default::default()
     };
 

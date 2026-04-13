@@ -120,7 +120,7 @@ async fn add_paper_inner(
             let tags = build_tags(args.tags);
 
             // Check for existing item
-            if let Some(existing) = find_existing_by_doi(&doi).await {
+            if let Some(existing) = find_existing_by_doi(client, &doi).await {
                 return Ok(format!(
                     "Item already exists: {}",
                     format_item_result(&existing, None, true)
@@ -143,7 +143,7 @@ async fn add_paper_inner(
             let tags = build_tags(args.tags);
 
             // Check for existing item
-            if let Some(existing) = find_existing_by_arxiv_id(&arxiv_id).await {
+            if let Some(existing) = find_existing_by_arxiv_id(client, &arxiv_id).await {
                 return Ok(format!(
                     "Item already exists: {}",
                     format_item_result(&existing, None, true)
@@ -518,14 +518,14 @@ mod tests {
             .await;
 
         Mock::given(method("PUT"))
-            .and(path("/ATTACH1.zip"))
+            .and(path("/zotero/ATTACH1.zip"))
             .respond_with(ResponseTemplate::new(201))
             .expect(1)
             .mount(&webdav_server)
             .await;
 
         Mock::given(method("PUT"))
-            .and(path("/ATTACH1.prop"))
+            .and(path("/zotero/ATTACH1.prop"))
             .respond_with(ResponseTemplate::new(201))
             .expect(1)
             .mount(&webdav_server)

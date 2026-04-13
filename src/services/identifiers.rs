@@ -112,14 +112,52 @@ fn hex_val(byte: u8) -> Option<u8> {
     }
 }
 
-/// Stub for Zotero client-dependent lookup.
-pub async fn find_existing_by_doi(_doi: &str) -> Option<ZoteroItem> {
-    None
+/// Look up an existing item in the Zotero library by exact DOI match.
+pub async fn find_existing_by_doi(client: &ZoteroClient, doi: &str) -> Option<ZoteroItem> {
+    let normalized = doi.to_lowercase();
+    let mut params = HashMap::new();
+    params.insert("itemType".to_string(), "-attachment".to_string());
+    let items = client
+        .paginate(|p| client.get_items(p), params, None)
+        .await
+        .ok()?;
+    items.into_iter().find(|item| {
+        item.data
+            .doi
+            .as_deref()
+            .map(|d| d.to_lowercase() == normalized)
+            .unwrap_or(false)
+    })
 }
 
-/// Stub for Zotero client-dependent lookup.
-pub async fn find_existing_by_arxiv_id(_arxiv_id: &str) -> Option<ZoteroItem> {
-    None
+/// Look up an existing item in the Zotero library by arXiv ID (URL or Extra field).
+pub async fn find_existing_by_arxiv_id(
+    client: &ZoteroClient,
+    arxiv_id: &str,
+) -> Option<ZoteroItem> {
+    let needle = arxiv_id.to_lowercase();
+    let mut params = HashMap::new();
+    params.insert("itemType".to_string(), "-attachment".to_string());
+    let items = client
+        .paginate(|p| client.get_items(p), params, None)
+        .await
+        .ok()?;
+    items.into_iter().find(|item| {
+        if item
+            .data
+            .url
+            .as_deref()
+            .map(|u| u.to_lowercase().contains(&needle))
+            .unwrap_or(false)
+        {
+            return true;
+        }
+        item.data
+            .extra
+            .as_deref()
+            .map(|e| e.to_lowercase().contains(&needle))
+            .unwrap_or(false)
+    })
 }
 
 /// Resolve collection names to keys by fetching all collections and matching names.
