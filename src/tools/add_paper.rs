@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use crate::clients::webdav::WebDavClient;
 use crate::clients::zotero::{ZoteroApiError, ZoteroClient};
-use crate::services::arxiv::add_via_arxiv;
+use crate::services::arxiv::{ArxivLookupError, add_via_arxiv};
 use crate::services::crossref::add_via_crossref;
 use crate::services::identifiers::{
     InputType, detect_input_type, find_existing_by_arxiv_id, find_existing_by_doi,
@@ -30,6 +30,7 @@ pub struct AddPaperArgs {
 }
 
 /// Execute the zotero_add_paper tool, returning formatted Markdown results.
+#[cfg_attr(not(test), allow(dead_code))]
 pub async fn handle_zotero_add_paper(
     client: &ZoteroClient,
     webdav: &WebDavClient,
@@ -39,6 +40,36 @@ pub async fn handle_zotero_add_paper(
         Ok(s) => s,
         Err(e) => format!("Error: {}", e),
     }
+}
+
+/// Execute zotero_add_paper and return a Result for MCP error handling.
+/// This function is used by server.rs to properly set isError flag.
+pub async fn execute_zotero_add_paper(
+    client: &ZoteroClient,
+    webdav: &WebDavClient,
+    args: AddPaperArgs,
+) -> anyhow::Result<String> {
+    add_paper_inner(client, webdav, args).await
+}
+
+/// Format an error from add_paper for MCP tool response.
+/// Returns user-friendly messages for temporary failures.
+pub fn format_add_paper_error(err: &anyhow::Error) -> String {
+    if let Some(arxiv_err) = err.downcast_ref::<ArxivLookupError>() {
+        match arxiv_err {
+            ArxivLookupError::TemporaryUnavailable { status } => {
+                return format!(
+                    "arXiv is temporarily unavailable ({}). Please retry zotero_add_paper in a few seconds.",
+                    status
+                );
+            }
+            ArxivLookupError::PermanentError { message } => {
+                return format!("arXiv error: {}", message);
+            }
+        }
+    }
+
+    format!("Error: {}", err)
 }
 
 async fn add_paper_inner(

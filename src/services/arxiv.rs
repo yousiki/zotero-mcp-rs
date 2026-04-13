@@ -3,6 +3,7 @@
 use phf::phf_map;
 use regex::Regex;
 use serde_json::Value;
+use std::time::Duration;
 
 use crate::clients::webdav::WebDavClient;
 use crate::clients::zotero::ZoteroClient;
@@ -10,6 +11,27 @@ use crate::shared::formatters::format_item_result;
 use crate::shared::template_engine::build_renamed_filename;
 use crate::shared::types::{ZoteroItemData, ZoteroTag};
 use crate::shared::validators::{extract_created_key, handle_write_response, parse_creator_names};
+
+// ---------------------------------------------------------------------------
+// Error types
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, thiserror::Error)]
+pub enum ArxivLookupError {
+    #[error("arXiv is temporarily unavailable ({status}). Please retry zotero_add_paper shortly.")]
+    TemporaryUnavailable { status: u16 },
+
+    #[error("arXiv lookup failed: {message}")]
+    PermanentError { message: String },
+}
+
+// Retry configuration
+const ARXIV_MAX_RETRIES: usize = 3;
+const ARXIV_RETRY_DELAYS: [Duration; 3] = [
+    Duration::from_millis(250),
+    Duration::from_millis(500),
+    Duration::from_millis(1000),
+];
 
 // ---------------------------------------------------------------------------
 // arXiv category map (compile-time, 184 entries)
@@ -460,6 +482,72 @@ pub fn extract_project_urls(text: &str) -> Vec<String> {
 }
 
 // ---------------------------------------------------------------------------
+// fetch_arxiv_atom_with_retry
+// ---------------------------------------------------------------------------
+
+/// Fetch arXiv Atom XML with retry logic for temporary failures.
+/// Retries on 429 (Too Many Requests) and 503 (Service Unavailable).
+pub async fn fetch_arxiv_atom_with_retry(
+    url: &str,
+    max_retries: usize,
+) -> Result<String, ArxivLookupError> {
+    let client = reqwest::Client::new();
+
+    for attempt in 0..=max_retries {
+        let response =
+            client
+                .get(url)
+                .send()
+                .await
+                .map_err(|e| ArxivLookupError::PermanentError {
+                    message: e.to_string(),
+                })?;
+
+        let status = response.status().as_u16();
+
+        if response.status().is_success() {
+            return response
+                .text()
+                .await
+                .map_err(|e| ArxivLookupError::PermanentError {
+                    message: e.to_string(),
+                });
+        }
+
+        if matches!(status, 429 | 503) && attempt < max_retries {
+            let delay = response
+                .headers()
+                .get("Retry-After")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.parse::<u64>().ok())
+                .map(Duration::from_secs)
+                .unwrap_or(ARXIV_RETRY_DELAYS[attempt.min(ARXIV_RETRY_DELAYS.len() - 1)]);
+
+            tracing::warn!(
+                "arXiv rate limited ({}), retrying in {:?} (attempt {}/{})",
+                status,
+                delay,
+                attempt + 1,
+                max_retries
+            );
+
+            tokio::time::sleep(delay).await;
+            continue;
+        }
+
+        if matches!(status, 429 | 503) {
+            return Err(ArxivLookupError::TemporaryUnavailable { status });
+        }
+
+        return Err(ArxivLookupError::PermanentError {
+            message: format!("HTTP {}", status),
+        });
+    }
+
+    Err(ArxivLookupError::TemporaryUnavailable { status: 429 })
+}
+
+// ---------------------------------------------------------------------------
 // add_via_arxiv (full orchestration)
 // ---------------------------------------------------------------------------
 
@@ -475,11 +563,9 @@ pub async fn add_via_arxiv(
         "https://export.arxiv.org/api/query?id_list={}",
         urlencoding(arxiv_id)
     );
-    let response = reqwest::get(&url).await?;
-    if !response.status().is_success() {
-        anyhow::bail!("arXiv lookup failed ({})", response.status());
-    }
-    let xml = response.text().await?;
+    let xml = fetch_arxiv_atom_with_retry(&url, ARXIV_MAX_RETRIES)
+        .await
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     // 2. Parse XML
     let parsed = parse_arxiv_atom(&xml).map_err(|e| anyhow::anyhow!("arXiv parse error: {}", e))?;

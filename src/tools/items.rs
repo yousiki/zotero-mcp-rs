@@ -543,7 +543,11 @@ async fn handle_zotero_delete_item_inner(
                                 if child.data.item_type == "attachment" {
                                     if let Err(e) = webdav_client.delete_file(&child.key).await {
                                         // Log but don't fail the whole operation
-                                        tracing::warn!("Failed to delete WebDAV file for {}: {}", child.key, e);
+                                        tracing::warn!(
+                                            "Failed to delete WebDAV file for {}: {}",
+                                            child.key,
+                                            e
+                                        );
                                     } else {
                                         webdav_deleted += 1;
                                     }
@@ -567,7 +571,12 @@ async fn handle_zotero_delete_item_inner(
         }
     }
 
-    let mut result = format!("Requested: {}\nDeleted: {}\nFailed: {}", item_keys.len(), deleted, failed);
+    let mut result = format!(
+        "Requested: {}\nDeleted: {}\nFailed: {}",
+        item_keys.len(),
+        deleted,
+        failed
+    );
     if webdav_deleted > 0 {
         result.push_str(&format!("\nWebDAV files deleted: {}", webdav_deleted));
     }

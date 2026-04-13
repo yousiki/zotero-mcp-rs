@@ -7,7 +7,7 @@ use rmcp::{
 
 use crate::clients::webdav::WebDavClient;
 use crate::clients::zotero::ZoteroClient;
-use crate::tools::add_paper::{AddPaperArgs, handle_zotero_add_paper};
+use crate::tools::add_paper::{AddPaperArgs, execute_zotero_add_paper, format_add_paper_error};
 use crate::tools::annotations::{
     AddNoteArgs, GetAnnotationsArgs, GetNotesArgs, handle_zotero_add_note,
     handle_zotero_get_annotations, handle_zotero_get_notes,
@@ -136,10 +136,16 @@ impl ZoteroServer {
     #[tool(
         description = "Add a paper to Zotero by URL, DOI, arXiv ID, ISBN, or local file path. Automatically extracts metadata and downloads PDF via WebDAV."
     )]
-    async fn zotero_add_paper(&self, Parameters(args): Parameters<AddPaperArgs>) -> String {
+    async fn zotero_add_paper(
+        &self,
+        Parameters(args): Parameters<AddPaperArgs>,
+    ) -> Result<String, String> {
         match self.webdav.as_ref() {
-            Some(webdav) => handle_zotero_add_paper(&self.client, webdav, args).await,
-            None => "WebDAV is not configured — add_paper requires WebDAV".to_string(),
+            Some(webdav) => match execute_zotero_add_paper(&self.client, webdav, args).await {
+                Ok(result) => Ok(result),
+                Err(err) => Err(format_add_paper_error(&err)),
+            },
+            None => Err("WebDAV is not configured — add_paper requires WebDAV".to_string()),
         }
     }
 
