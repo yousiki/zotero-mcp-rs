@@ -16,11 +16,9 @@ COPY src ./src
 # - /usr/local/cargo/registry: downloaded crate sources
 # - /usr/local/cargo/git/db: git dependency checkouts
 # - /app/target: compiled artifacts
-# Clean up stale .cargo-ok files to fix cache collision issues
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/app/target \
-    find /usr/local/cargo/registry/src -name '.cargo-ok' -delete 2>/dev/null || true; \
     cargo build --release --locked && \
     cp /app/target/release/zotero-mcp-rs /zotero-mcp-rs
 
